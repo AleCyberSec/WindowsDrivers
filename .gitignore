@@ -1,0 +1,54 @@
+# Windows Installer Files
+Thumbs.db
+ehthumbs.db
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# VS temporary files
+.vs/
+.vscode/
+.idea/
+
+
+# Windows image file
+*.iso
+
+# Compiled files
+*.obj
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.suo
+*.user
+*.aps
+*.pch
+
+# Generated Visual Studio files
+[Dd]ebug/
+[Dd]ebugPublic/
+[Dd]Release/
+[Dd]ReleasePublic/
+x64/
+x86/
+ARM/
+ARM64/
+
+# Npm and Node.js related
+node_modules/
+
+# Windows Installer Logs
+*.cab
+*.msi
+*.log
+
+# Windows system files
+*.bak
+*.swp
+
