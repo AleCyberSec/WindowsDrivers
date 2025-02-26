@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35707.178
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RemoteThreadDetector", "RemoteThreadDetector\RemoteThreadDetector.vcxproj", "{5115EEC1-E151-4306-AA80-6B6D21826724}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClientRemoteThreadDetector", "ClientRemoteThreadDetector\ClientRemoteThreadDetector.vcxproj", "{AE647569-63C9-4FF1-8DF4-5E72DE2515D3}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ExecutableTriggeringRemThread", "ExecutableTriggeringRemThread\ExecutableTriggeringRemThread.vcxproj", "{5FF88385-7494-41C0-A78E-A679938E6706}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DllToInject", "DllToInject\DllToInject.vcxproj", "{BC4A5C43-3439-494E-BE7A-D070EB6767B4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Debug|ARM64.Build.0 = Debug|ARM64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Debug|x64.ActiveCfg = Debug|x64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Debug|x64.Build.0 = Debug|x64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Debug|x64.Deploy.0 = Debug|x64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Release|ARM64.ActiveCfg = Release|ARM64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Release|ARM64.Build.0 = Release|ARM64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Release|ARM64.Deploy.0 = Release|ARM64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Release|x64.ActiveCfg = Release|x64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Release|x64.Build.0 = Release|x64
+		{5115EEC1-E151-4306-AA80-6B6D21826724}.Release|x64.Deploy.0 = Release|x64
+		{AE647569-63C9-4FF1-8DF4-5E72DE2515D3}.Debug|ARM64.ActiveCfg = Debug|x64
+		{AE647569-63C9-4FF1-8DF4-5E72DE2515D3}.Debug|ARM64.Build.0 = Debug|x64
+		{AE647569-63C9-4FF1-8DF4-5E72DE2515D3}.Debug|x64.ActiveCfg = Debug|x64
+		{AE647569-63C9-4FF1-8DF4-5E72DE2515D3}.Debug|x64.Build.0 = Debug|x64
+		{AE647569-63C9-4FF1-8DF4-5E72DE2515D3}.Release|ARM64.ActiveCfg = Release|x64
+		{AE647569-63C9-4FF1-8DF4-5E72DE2515D3}.Release|ARM64.Build.0 = Release|x64
+		{AE647569-63C9-4FF1-8DF4-5E72DE2515D3}.Release|x64.ActiveCfg = Release|x64
+		{AE647569-63C9-4FF1-8DF4-5E72DE2515D3}.Release|x64.Build.0 = Release|x64
+		{5FF88385-7494-41C0-A78E-A679938E6706}.Debug|ARM64.ActiveCfg = Debug|x64
+		{5FF88385-7494-41C0-A78E-A679938E6706}.Debug|ARM64.Build.0 = Debug|x64
+		{5FF88385-7494-41C0-A78E-A679938E6706}.Debug|x64.ActiveCfg = Debug|x64
+		{5FF88385-7494-41C0-A78E-A679938E6706}.Debug|x64.Build.0 = Debug|x64
+		{5FF88385-7494-41C0-A78E-A679938E6706}.Release|ARM64.ActiveCfg = Release|x64
+		{5FF88385-7494-41C0-A78E-A679938E6706}.Release|ARM64.Build.0 = Release|x64
+		{5FF88385-7494-41C0-A78E-A679938E6706}.Release|x64.ActiveCfg = Release|x64
+		{5FF88385-7494-41C0-A78E-A679938E6706}.Release|x64.Build.0 = Release|x64
+		{BC4A5C43-3439-494E-BE7A-D070EB6767B4}.Debug|ARM64.ActiveCfg = Debug|x64
+		{BC4A5C43-3439-494E-BE7A-D070EB6767B4}.Debug|ARM64.Build.0 = Debug|x64
+		{BC4A5C43-3439-494E-BE7A-D070EB6767B4}.Debug|x64.ActiveCfg = Debug|x64
+		{BC4A5C43-3439-494E-BE7A-D070EB6767B4}.Debug|x64.Build.0 = Debug|x64
+		{BC4A5C43-3439-494E-BE7A-D070EB6767B4}.Release|ARM64.ActiveCfg = Release|x64
+		{BC4A5C43-3439-494E-BE7A-D070EB6767B4}.Release|ARM64.Build.0 = Release|x64
+		{BC4A5C43-3439-494E-BE7A-D070EB6767B4}.Release|x64.ActiveCfg = Release|x64
+		{BC4A5C43-3439-494E-BE7A-D070EB6767B4}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
