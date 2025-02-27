@@ -10,4 +10,5 @@ In the solution I have 4 projects:
  The path of the dll must be changed properly inside this executable.  
 4)The dll to inject that shows the popup (dllMain.cpp)  
 
- 
+## Notes for ProcessProtector driver
+The callback defined and executed when a process is opened (removing the right of the handle to terminate the process) is not valid for processes that have user interface because by clicking the "X" they call the exit internally without opening any handles. 
