@@ -8,7 +8,8 @@ typedef enum {
     ITEM_PROCESS_EXIT, 
     ITEM_THREAD_CREATE, 
     ITEM_THREAD_EXIT, 
-    ITEM_IMAGE_LOAD
+    ITEM_IMAGE_LOAD, 
+    ITEM_REGISTRY_SET_VALUE
 } ItemType;
 
 /*
@@ -61,12 +62,27 @@ Now, we will define a union to hold different types of event data.
 We use this structure to handle the data generically.
 */
 
+typedef struct {
+    ULONG ProcessId;
+    ULONG ThreadId;
+    USHORT KeyNameOffset;
+    // from beginning of structure
+    USHORT ValueNameOffset; // from beginning of structure
+    ULONG DataType;
+    // REG_xxx
+    ULONG DataSize;
+    // actual size
+    USHORT DataOffset;
+    USHORT ProvidedDataSize;
+}RegistrySetValueInfo, *PRegistrySetValueInfo;
+
 typedef union {
     ProcessExitInfo processExitInfo;
     ProcessCreateInfo processCreateInfo;
     ThreadCreateInfo threadCreateInfo;
     ThreadExitInfo threadExitInfo;
     ImageLoadInfo imageLoadInfo;
+    RegistrySetValueInfo registrySetValInfo;
 } EventData, * PEventData;
 
 typedef struct {

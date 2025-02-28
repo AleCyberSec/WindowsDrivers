@@ -5,6 +5,7 @@ typedef struct {
 	ULONG m_Count;
 	ULONG m_MaxCount;
 	FAST_MUTEX m_Lock;
+	LARGE_INTEGER m_RegCookie;
 }Globals, * PGlobals;
 
 void Globals_Init(PGlobals globals, ULONG maxItems);

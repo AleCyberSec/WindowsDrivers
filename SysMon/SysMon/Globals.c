@@ -7,7 +7,9 @@ void Globals_Init(PGlobals globals, ULONG maxItems) {
 	ExInitializeFastMutex(&globals->m_Lock);
 	globals->m_Count = 0; 
 	globals->m_MaxCount = maxItems; 
+    RtlZeroMemory(&globals->m_RegCookie, sizeof(LARGE_INTEGER));
 }
+
 BOOLEAN Globals_AddItem(PGlobals globals, LIST_ENTRY* entry) {
     ExAcquireFastMutex(&globals->m_Lock);
 

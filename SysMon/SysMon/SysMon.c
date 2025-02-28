@@ -13,6 +13,8 @@ NTSTATUS SysMonRead(PDEVICE_OBJECT DeviceObject, PIRP Irp);
 void OnProcessNotify(PEPROCESS Process, HANDLE ProcessId, PPS_CREATE_NOTIFY_INFO CreateInfo);
 void OnThreadNotify(HANDLE ProcessId, HANDLE ThreadId, BOOLEAN Create);
 void OnImageLoadNotify(PUNICODE_STRING FullImageName, HANDLE ProcessId, PIMAGE_INFO ImageInfo);
+NTSTATUS OnRegistryNotify(PVOID context, PVOID arg1, PVOID arg2);
+
 
 NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) {
 
@@ -69,6 +71,10 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) 
 				status));
 			break;
 		}
+
+		UNICODE_STRING altitude = RTL_CONSTANT_STRING(L"7657.124");
+		status = CmRegisterCallbackEx(OnRegistryNotify, &altitude, DriverObject,
+			NULL, &g_state.m_RegCookie, NULL);
 		
 	} while (FALSE);
 
@@ -164,6 +170,8 @@ NTSTATUS SysMonRead(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 
 void SysMonUnload(PDRIVER_OBJECT DriverObject) {
 	
+	CmUnRegisterCallback(g_state.m_RegCookie);
+
 	PsRemoveLoadImageNotifyRoutine(OnImageLoadNotify);
 
 	/*PsRemoveCreateThreadNotifyRoutine(OnThreadNotify);*/
@@ -322,4 +330,77 @@ void OnImageLoadNotify(PUNICODE_STRING FullImageName,
 	}
 
 	Globals_AddItem(&g_state, &info->Entry);
+}
+
+//only care about writes done to HKEY_LOCAL_MACHINE
+NTSTATUS OnRegistryNotify(PVOID context, PVOID arg1, PVOID arg2) {
+	UNREFERENCED_PARAMETER(context);
+	switch ((REG_NOTIFY_CLASS)(ULONG_PTR)arg1) {
+
+		case RegNtPostSetValueKey: {
+		REG_POST_OPERATION_INFORMATION* args = (REG_POST_OPERATION_INFORMATION*)arg2;
+			if (!NT_SUCCESS(args->Status))
+				break;
+			static const WCHAR machine[] = L"\\REGISTRY\\MACHINE\\";
+			PCUNICODE_STRING name;
+			if (NT_SUCCESS(CmCallbackGetKeyObjectIDEx(&g_state.m_RegCookie, args->Object,
+				NULL, &name, 0))) {
+				if (wcsncmp(name->Buffer, machine, ARRAYSIZE(machine) - 1) == 0) {
+					REG_SET_VALUE_KEY_INFORMATION* preInfo = (REG_SET_VALUE_KEY_INFORMATION*)args->PreInformation;
+					NT_ASSERT(preInfo);
+
+					USHORT size = sizeof(RegistrySetValueInfo);
+					USHORT keyNameLen = name->Length + sizeof(WCHAR);//for NULL termination 
+					USHORT valueNameLen = preInfo->ValueName->Length + sizeof(WCHAR);
+					USHORT valueSize = (USHORT)(preInfo->DataSize > 256 ? 256 : preInfo->DataSize);
+					size += keyNameLen + valueNameLen + valueSize;
+
+					PFullItem info = (PFullItem)ExAllocatePool2(POOL_FLAG_PAGED, sizeof(ItemHeader) + sizeof(LIST_ENTRY) + size, DRIVER_TAG);
+					if (info == NULL) {
+						KdPrint((DRIVER_PREFIX "failed allocation\n"));
+						return STATUS_INSUFFICIENT_RESOURCES;
+					}
+
+					//filling header
+					KeQuerySystemTimePrecise(&info->header.Time);
+					info->header.Type = ITEM_REGISTRY_SET_VALUE;
+					info->header.Size = size;
+
+					//filling data
+					info->data.registrySetValInfo.DataType = preInfo->Type;
+					info->data.registrySetValInfo.DataSize = preInfo->DataSize;
+					info->data.registrySetValInfo.ProcessId = HandleToULong(PsGetCurrentProcessId());
+					info->data.registrySetValInfo.ThreadId = HandleToULong(PsGetCurrentThreadId());
+					info->data.registrySetValInfo.ProvidedDataSize = valueSize;
+
+					//filling the offsets
+					USHORT offset = sizeof(RegistrySetValueInfo);
+					info->data.registrySetValInfo.KeyNameOffset = offset; //The first offset starts at the end of the structure
+
+					wcsncpy_s((PWSTR)((PUCHAR)&info->data.registrySetValInfo + offset),
+						keyNameLen / sizeof(WCHAR), name->Buffer,
+						name->Length / sizeof(WCHAR));
+
+					offset += keyNameLen;
+					info->data.registrySetValInfo.ValueNameOffset = offset;
+
+					wcsncpy_s((PWSTR)((PUCHAR)&info->data.registrySetValInfo + offset),
+						valueNameLen / sizeof(WCHAR), preInfo->ValueName->Buffer,
+						preInfo->ValueName->Length / sizeof(WCHAR));
+
+					offset += valueNameLen;
+					info->data.registrySetValInfo.DataOffset = offset;
+					memcpy((PUCHAR)&info->data.registrySetValInfo + offset, preInfo->Data, valueSize);
+
+					// finally, add the item
+					Globals_AddItem(&g_state, &info->Entry);
+				}
+
+				//if CmCallbackGetKeyObjectIDEx succeeds, the resulting key name must be explicitly freed
+				CmCallbackReleaseKeyObjectIDEx(name);
+			}
+		}
+
+	}
+	return STATUS_SUCCESS;
 }
