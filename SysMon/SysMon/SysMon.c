@@ -176,6 +176,14 @@ void SysMonUnload(PDRIVER_OBJECT DriverObject) {
 
 	/*PsRemoveCreateThreadNotifyRoutine(OnThreadNotify);*/
 	PsSetCreateProcessNotifyRoutineEx(OnProcessNotify, TRUE);
+
+	// Wait for all callbacks to finish (to fix the error of unload the driver while there are callbacks running)
+	while (InterlockedCompareExchange(&g_state.ActiveCallbacks, 0, 0) != 0) {
+		LARGE_INTEGER delay;
+		delay.QuadPart = -10 * 1000 * 100; // 100ms delay
+		KeDelayExecutionThread(KernelMode, FALSE, &delay);
+	}
+
 	LIST_ENTRY* entry;
 	while ((entry = Globals_RemoveItem(&g_state)) != NULL) {
 		ExFreePool(CONTAINING_RECORD(entry, FullItem, Entry));
@@ -186,6 +194,8 @@ void SysMonUnload(PDRIVER_OBJECT DriverObject) {
 }
 
 void OnProcessNotify(PEPROCESS Process, HANDLE ProcessId, PPS_CREATE_NOTIFY_INFO CreateInfo) {
+	InterlockedIncrement(&g_state.ActiveCallbacks);
+	
 	if (CreateInfo) {
 		USHORT allocSize = sizeof(FullItem);
 		USHORT commandLineSize = 0;
@@ -199,6 +209,7 @@ void OnProcessNotify(PEPROCESS Process, HANDLE ProcessId, PPS_CREATE_NOTIFY_INFO
 		PFullItem info = (PFullItem)ExAllocatePool2(POOL_FLAG_PAGED, allocSize, DRIVER_TAG);
 		if (info == NULL) {
 			KdPrint((DRIVER_PREFIX "failed allocation\n"));
+			InterlockedDecrement(&g_state.ActiveCallbacks);
 			return;
 		}
 
@@ -252,13 +263,16 @@ void OnProcessNotify(PEPROCESS Process, HANDLE ProcessId, PPS_CREATE_NOTIFY_INFO
 		// Add to global list
 		Globals_AddItem(&g_state, &info->Entry);
 	}
+	InterlockedDecrement(&g_state.ActiveCallbacks);
 }
 
 void OnThreadNotify(HANDLE ProcessId, HANDLE ThreadId, BOOLEAN Create) {
-	
+	InterlockedIncrement(&g_state.ActiveCallbacks);
+
 	PFullItem info = (PFullItem)ExAllocatePool2(POOL_FLAG_PAGED, sizeof(FullItem), DRIVER_TAG);
 	if (info == NULL) {
 		KdPrint((DRIVER_PREFIX "failed allocation\n"));
+		InterlockedDecrement(&g_state.ActiveCallbacks);
 		return;
 	}
 
@@ -287,7 +301,7 @@ void OnThreadNotify(HANDLE ProcessId, HANDLE ThreadId, BOOLEAN Create) {
 	}
 
 	Globals_AddItem(&g_state, &info->Entry);
-
+	InterlockedDecrement(&g_state.ActiveCallbacks);
 }
 
 void OnImageLoadNotify(PUNICODE_STRING FullImageName,
@@ -296,10 +310,12 @@ void OnImageLoadNotify(PUNICODE_STRING FullImageName,
 		// system image, ignore
 		return;
 	}
+	InterlockedIncrement(&g_state.ActiveCallbacks);
 
 	PFullItem info = (PFullItem)ExAllocatePool2(POOL_FLAG_PAGED, sizeof(FullItem), DRIVER_TAG);
 	if (info == NULL) {
 		KdPrint((DRIVER_PREFIX "failed allocation\n"));
+		InterlockedDecrement(&g_state.ActiveCallbacks);
 		return;
 	}
 	
@@ -330,11 +346,14 @@ void OnImageLoadNotify(PUNICODE_STRING FullImageName,
 	}
 
 	Globals_AddItem(&g_state, &info->Entry);
+	InterlockedDecrement(&g_state.ActiveCallbacks);
 }
 
 //only care about writes done to HKEY_LOCAL_MACHINE
 NTSTATUS OnRegistryNotify(PVOID context, PVOID arg1, PVOID arg2) {
 	UNREFERENCED_PARAMETER(context);
+	InterlockedIncrement(&g_state.ActiveCallbacks);
+
 	switch ((REG_NOTIFY_CLASS)(ULONG_PTR)arg1) {
 
 		case RegNtPostSetValueKey: {
@@ -358,6 +377,7 @@ NTSTATUS OnRegistryNotify(PVOID context, PVOID arg1, PVOID arg2) {
 					PFullItem info = (PFullItem)ExAllocatePool2(POOL_FLAG_PAGED, sizeof(ItemHeader) + sizeof(LIST_ENTRY) + size, DRIVER_TAG);
 					if (info == NULL) {
 						KdPrint((DRIVER_PREFIX "failed allocation\n"));
+						InterlockedDecrement(&g_state.ActiveCallbacks);
 						return STATUS_INSUFFICIENT_RESOURCES;
 					}
 
@@ -402,5 +422,6 @@ NTSTATUS OnRegistryNotify(PVOID context, PVOID arg1, PVOID arg2) {
 		}
 
 	}
+	InterlockedDecrement(&g_state.ActiveCallbacks);
 	return STATUS_SUCCESS;
 }

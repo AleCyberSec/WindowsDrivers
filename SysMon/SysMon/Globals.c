@@ -8,6 +8,7 @@ void Globals_Init(PGlobals globals, ULONG maxItems) {
 	globals->m_Count = 0; 
 	globals->m_MaxCount = maxItems; 
     RtlZeroMemory(&globals->m_RegCookie, sizeof(LARGE_INTEGER));
+    globals->ActiveCallbacks = 0; 
 }
 
 BOOLEAN Globals_AddItem(PGlobals globals, LIST_ENTRY* entry) {
