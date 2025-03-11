@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35707.178 d17.12
+VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DelProtector", "DelProtector\DelProtector.vcxproj", "{E3D7992A-BD4A-4BA7-BD5E-5EAD9B5A126D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClientDelProtector", "ClientDelProtector\ClientDelProtector.vcxproj", "{7BB8364B-1F34-4763-BCB9-28FE6052A8E9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +27,14 @@ Global
 		{E3D7992A-BD4A-4BA7-BD5E-5EAD9B5A126D}.Release|x64.ActiveCfg = Release|x64
 		{E3D7992A-BD4A-4BA7-BD5E-5EAD9B5A126D}.Release|x64.Build.0 = Release|x64
 		{E3D7992A-BD4A-4BA7-BD5E-5EAD9B5A126D}.Release|x64.Deploy.0 = Release|x64
+		{7BB8364B-1F34-4763-BCB9-28FE6052A8E9}.Debug|ARM64.ActiveCfg = Debug|x64
+		{7BB8364B-1F34-4763-BCB9-28FE6052A8E9}.Debug|ARM64.Build.0 = Debug|x64
+		{7BB8364B-1F34-4763-BCB9-28FE6052A8E9}.Debug|x64.ActiveCfg = Debug|x64
+		{7BB8364B-1F34-4763-BCB9-28FE6052A8E9}.Debug|x64.Build.0 = Debug|x64
+		{7BB8364B-1F34-4763-BCB9-28FE6052A8E9}.Release|ARM64.ActiveCfg = Release|x64
+		{7BB8364B-1F34-4763-BCB9-28FE6052A8E9}.Release|ARM64.Build.0 = Release|x64
+		{7BB8364B-1F34-4763-BCB9-28FE6052A8E9}.Release|x64.ActiveCfg = Release|x64
+		{7BB8364B-1F34-4763-BCB9-28FE6052A8E9}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

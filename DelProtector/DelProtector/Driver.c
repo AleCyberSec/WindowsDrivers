@@ -2,6 +2,7 @@
 #include <ntddk.h>
 
 #include "..\DelProtector\Driver.h"
+#include "..\DelProtector\DelProtectPublic.h"
 
 FilterState g_State; 
 
@@ -29,6 +30,9 @@ FLT_PREOP_CALLBACK_STATUS DelProtectPreCreate(PFLT_CALLBACK_DATA Data,
 	PCFLT_RELATED_OBJECTS FltObjects, PVOID* pointer);
 BOOLEAN IsDeleteAllowed(PUNICODE_STRING filename);
 
+NTSTATUS OnCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS OnDeviceControl(PDEVICE_OBJECT devObj, PIRP Irp);
+NTSTATUS CompleteRequest(PIRP Irp, NTSTATUS status, ULONG_PTR info);
 
 NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) {
 	
@@ -129,9 +133,9 @@ NTSTATUS DriverEntry(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPath) 
 
 	g_State.DriverObject = DriverObject; 
 	
-	//DriverObject->MajorFunction[IRP_MJ_CREATE] = OnCreateClose; 
-	//DriverObject->MajorFunction[IRP_MJ_CLOSE] = OnCreateClose;
-	//DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = OnDeviceControl; 
+	DriverObject->MajorFunction[IRP_MJ_CREATE] = OnCreateClose; 
+	DriverObject->MajorFunction[IRP_MJ_CLOSE] = OnCreateClose;
+	DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = OnDeviceControl; 
 
 	return status; 
 }
@@ -307,4 +311,57 @@ NTSTATUS InitMiniFilter(PDRIVER_OBJECT DriverObject, PUNICODE_STRING RegistryPat
 	NTSTATUS status = FltRegisterFilter(DriverObject, &reg, &g_State.Filter);
 
 	return status; 
+}
+
+NTSTATUS OnDeviceControl(PDEVICE_OBJECT devObj, PIRP Irp) {
+	UNREFERENCED_PARAMETER(devObj);
+
+	NTSTATUS status = STATUS_INVALID_DEVICE_REQUEST;
+	PIO_STACK_LOCATION stack = IoGetCurrentIrpStackLocation(Irp);
+	ULONG code = stack->Parameters.DeviceIoControl.IoControlCode;
+	ULONG len = 0U; 
+	WCHAR* ext = (WCHAR*)Irp->AssociatedIrp.SystemBuffer;
+	ULONG inputLen = stack->Parameters.DeviceIoControl.InputBufferLength;
+
+	switch (code) {
+		
+		case IOCTL_DELPROTECT_SET_EXTENSIONS:
+			if (ext == NULL || inputLen < sizeof(WCHAR) * 2 || ext[inputLen / sizeof(WCHAR) - 1] != 0) {
+				status = STATUS_INVALID_PARAMETER; 
+				break; 
+			}
+			if (g_State.Extensions.MaximumLength < inputLen - sizeof(WCHAR)) {
+				PVOID buffer = ExAllocatePool2(POOL_FLAG_PAGED, inputLen, DRIVER_TAG);
+				if (buffer == NULL) {
+					status = STATUS_INSUFFICIENT_RESOURCES;
+					break; 
+				}
+				g_State.Extensions.MaximumLength = (USHORT)inputLen;
+
+				ExFreePool(g_State.Extensions.Buffer);
+				g_State.Extensions.Buffer = (PWSTR)buffer; 
+			}
+			UNICODE_STRING ustr; 
+			RtlInitUnicodeString(&ustr, ext);
+			RtlUpcaseUnicodeString(&ustr, &ustr, FALSE);
+			memcpy(g_State.Extensions.Buffer, ext, inputLen);
+			g_State.Extensions.Length = (USHORT)inputLen;
+			len = inputLen; 
+			status = STATUS_SUCCESS; 
+			break; 
+
+	}
+	return CompleteRequest(Irp, status, len);
+}
+
+NTSTATUS CompleteRequest(PIRP Irp, NTSTATUS status, ULONG_PTR info) {
+	Irp->IoStatus.Status = status;
+	Irp->IoStatus.Information = info;
+	IoCompleteRequest(Irp, IO_NO_INCREMENT);
+	return status;
+}
+
+NTSTATUS OnCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
+	UNREFERENCED_PARAMETER(DeviceObject);
+	return CompleteRequest(Irp, STATUS_SUCCESS, 0);
 }
