@@ -1,0 +1,10 @@
+#pragma once
+
+//defining dispatch routines 
+NTSTATUS HideProcCreateClose(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+NTSTATUS HideProcDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp);
+void HideProcUnload(PDRIVER_OBJECT DriverObject);
+
+#define HIDE_DRIVER 0x8101
+#define IOCTL_HIDE_PROCESSES CTL_CODE(HIDE_DRIVER, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_UNHIDE_PROCESSES CTL_CODE(HIDE_DRIVER, 0x802, METHOD_BUFFERED, FILE_ANY_ACCESS)
