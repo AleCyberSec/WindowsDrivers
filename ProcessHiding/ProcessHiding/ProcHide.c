@@ -3,6 +3,7 @@
 #include "..\ProcessHiding\Debug.h"
 #include "..\ProcessHiding\ProcHide.h"
 
+
 //global state
 extern Globals g_state; 
 

@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35707.178 d17.12
+VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProcessHiding", "ProcessHiding\ProcessHiding.vcxproj", "{2DA7E478-F492-4676-839F-51B4C2179BE8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ClientHideProcesses", "ClientHideProcesses\ClientHideProcesses.vcxproj", "{3D5F1363-4693-4DF8-86BD-30BCE0E8AF05}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +27,14 @@ Global
 		{2DA7E478-F492-4676-839F-51B4C2179BE8}.Release|x64.ActiveCfg = Release|x64
 		{2DA7E478-F492-4676-839F-51B4C2179BE8}.Release|x64.Build.0 = Release|x64
 		{2DA7E478-F492-4676-839F-51B4C2179BE8}.Release|x64.Deploy.0 = Release|x64
+		{3D5F1363-4693-4DF8-86BD-30BCE0E8AF05}.Debug|ARM64.ActiveCfg = Debug|x64
+		{3D5F1363-4693-4DF8-86BD-30BCE0E8AF05}.Debug|ARM64.Build.0 = Debug|x64
+		{3D5F1363-4693-4DF8-86BD-30BCE0E8AF05}.Debug|x64.ActiveCfg = Debug|x64
+		{3D5F1363-4693-4DF8-86BD-30BCE0E8AF05}.Debug|x64.Build.0 = Debug|x64
+		{3D5F1363-4693-4DF8-86BD-30BCE0E8AF05}.Release|ARM64.ActiveCfg = Release|x64
+		{3D5F1363-4693-4DF8-86BD-30BCE0E8AF05}.Release|ARM64.Build.0 = Release|x64
+		{3D5F1363-4693-4DF8-86BD-30BCE0E8AF05}.Release|x64.ActiveCfg = Release|x64
+		{3D5F1363-4693-4DF8-86BD-30BCE0E8AF05}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

