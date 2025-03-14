@@ -17,6 +17,7 @@ ULONG Globals_RemoveProcesses(Globals* g_state, const ULONG* pids, ULONG count);
 int Globals_FindProcess(Globals* g_state, ULONG pid);
 NTSTATUS HideProc(_In_ ULONG pid, _Out_ ULONG_PTR* ListEntry);
 NTSTATUS UnHideProc(_In_ Globals* g_state, ULONG index); 
+void WriteHiddenProcessesInOutputBuffer(ULONG* outputBuffer, Globals* g_state);
 
 NTSTATUS CompleteRequest(PIRP Irp, NTSTATUS status, ULONG_PTR info);
 

